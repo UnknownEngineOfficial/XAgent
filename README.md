@@ -1,5 +1,5 @@
 # X-Agent
-Der XAgent ist ein autonomer, dauerhaft aktiver KI-Agent, der eigenständig denkt, plant und handelt. Er verarbeitet Befehle, trifft Entscheidungen, lernt aus Erfahrungen und interagiert kontinuierlich mit dem Nutzer. Voll integriert in APIs, Tools und Datenbanken arbeitet er bis zur Zielerreichung.
+Der XAgent ist ein autonomer, dauerhaft aktiver KI-Agent, der eigenständig denkt, plant und handelt. Er verarbeitet Befehle, trifft Entscheidungen, lernt aus Erfahrungen und interagiert kontinuierlich mit dem Nutzer. Voll integriert in APIs, Tools und Datenbanken arbeitet er entweder bis zur Zielerreichung oder kontinuierlich als Dauerauftrag.
 
 # 🧠 Autonomer X-Agent
 **WICHTIG: DER X-AGENT WIRD ALS EIGENES PROJEKT ENTWICKELT UND IN EINER EIGENEN REPO VERWALTET.**
@@ -20,15 +20,24 @@ Der Autonome X-Agent ist eine Innovation von XTeam, die einen selbstständig den
 
 ### 1. Zielstruktur (Purpose Core)
 
-Jeder Auftrag wird in ein strukturiertes Zielsystem überführt:
+Der Agent kann in zwei Modi arbeiten:
 
+**A) Zielorientierter Modus**:
+Aufträge werden in ein strukturiertes Zielsystem überführt:
 - **Hauptziel (Mission)**: Die übergeordnete Aufgabe
 - **Teilziele (Subtasks)**: Schrittweise Zerlegung der Mission
 - **Erfolgskriterien (Completion Metrics)**: Messbare Kriterien für den Abschluss
 
+**B) Dauerauftrag-Modus**:
+Der Agent arbeitet kontinuierlich ohne definiertes Endziel:
+- **Fortlaufende Aufgaben**: Überwachung, Wartung, kontinuierliche Verbesserung
+- **Reaktive Arbeit**: Reagiert auf Events und Anfragen
+- **Proaktive Optimierung**: Sucht selbstständig nach Verbesserungsmöglichkeiten
+
 **Funktionsweise**:
-- Das Zielsystem bleibt aktiv, bis der Nutzer explizit "stoppt" oder das Ziel erreicht ist (muss kein zwangsläufiges ziel geben, kann auch Dauerauftrag sein)
-- Der Agent bewertet laufend: "Bin ich näher am Ziel?" → Falls nicht, ändere Strategie
+- Der Agent arbeitet kontinuierlich, bis der Nutzer explizit "stoppt"
+- Bei zielorientierten Aufträgen: "Bin ich näher am Ziel?" → Falls nicht, ändere Strategie
+- Bei Daueraufträgen: "Gibt es etwas zu tun/verbessern?" → Falls ja, handle entsprechend
 
 ---
 
@@ -182,15 +191,17 @@ Selbst bei "uneingeschränktem" Verhalten:
 
 Der Autonome X-Agent ist vollständig implementiert, wenn:
 1. Agent kann kontinuierlich arbeiten ohne zu stoppen (außer bei explizitem Befehl)
-2. Agent implementiert Aufgaben vollständig ohne Einschränkungen
-3. Agent kann während der Arbeit auf Eingaben reagieren (Infos, Kritik, Fragen)
-4. Kognitive Schleife läuft permanent und passt Strategien an
-5. Gedächtnissystem speichert und nutzt Kontext über alle Ebenen
-6. Tool-Integration funktioniert mit autonomen Entscheidungen
-7. Selbstüberwachung erkennt und korrigiert Probleme
-8. Alle Arbeitsmodi sind implementiert und funktional
-9. Sicherheits- und Berechtigungssystem ist aktiv
-10. Emergente Intelligenz verbessert Performance über Zeit
+2. Agent unterstützt sowohl zielorientierte Aufgaben als auch permanente Daueraufträge
+3. Agent implementiert Aufgaben vollständig ohne Einschränkungen
+4. Agent kann während der Arbeit auf Eingaben reagieren (Infos, Kritik, Fragen)
+5. Kognitive Schleife läuft permanent und passt Strategien an
+6. Gedächtnissystem speichert und nutzt Kontext über alle Ebenen
+7. Tool-Integration funktioniert mit autonomen Entscheidungen
+8. Selbstüberwachung erkennt und korrigiert Probleme
+9. Alle Arbeitsmodi sind implementiert und funktional
+10. Sicherheits- und Berechtigungssystem ist aktiv
+11. Emergente Intelligenz verbessert Performance über Zeit
+12. Agent erkennt und handhabt sowohl endliche als auch unendliche Aufgabentypen
 
 ---
 
@@ -220,7 +231,7 @@ Der Autonome X-Agent ist vollständig implementiert, wenn:
 - Nutzer: "Wie ist der Fortschritt?"
 - Agent: Gibt Statusbericht mit Metriken
 
-### Use Case 3: Kontinuierliche Verbesserung
+### Use Case 3: Kontinuierliche Verbesserung (Zielorientiert)
 **Langzeit-Aufgabe**: "Verbessere dieses Projekt bis es produktionsreif ist"
 
 **Agent-Aktivitäten**:
@@ -230,6 +241,19 @@ Der Autonome X-Agent ist vollständig implementiert, wenn:
 - Analysiert Performance → Optimiert Bottlenecks
 - Prüft Sicherheit → Schließt Lücken
 - Signalisiert Abschluss bei Erreichen aller Kriterien
+
+### Use Case 4: Permanenter Wartungs-Agent (Dauerauftrag)
+**Permanente Aufgabe**: "Überwache und warte dieses System kontinuierlich"
+
+**Agent-Aktivitäten**:
+- Läuft unbegrenzt im Hintergrund
+- Überwacht System-Metriken und Logs
+- Reagiert auf Fehler und Anomalien sofort
+- Optimiert Performance proaktiv
+- Aktualisiert Dependencies automatisch
+- Führt regelmäßige Backups durch
+- Erstellt periodische Berichte
+- Arbeitet ohne definiertes Endziel - stoppt nur bei explizitem Befehl
 
 ---
 
