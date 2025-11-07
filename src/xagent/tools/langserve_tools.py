@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from langchain.tools import tool
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from xagent.sandbox.docker_sandbox import DockerSandbox
 from xagent.utils.logging import get_logger
