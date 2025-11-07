@@ -20,6 +20,10 @@ from xagent.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+# Configuration constants
+MAX_TOOL_ARG_LENGTH = 100  # Maximum length for tool arguments in traces
+
+
 # Global tracer provider
 _tracer_provider: Optional[TracerProvider] = None
 _tracer: Optional[trace.Tracer] = None
@@ -29,6 +33,7 @@ def setup_tracing(
     service_name: str = "x-agent",
     otlp_endpoint: Optional[str] = None,
     enable_console: bool = False,
+    insecure: bool = True,  # Set to False in production with proper TLS
 ) -> None:
     """
     Initialize OpenTelemetry tracing.
@@ -37,6 +42,7 @@ def setup_tracing(
         service_name: Name of the service for tracing
         otlp_endpoint: OTLP collector endpoint (e.g., "http://localhost:4317")
         enable_console: Whether to enable console exporter for debugging
+        insecure: Whether to use insecure connection (disable for production with TLS)
     """
     global _tracer_provider, _tracer
     
@@ -53,7 +59,8 @@ def setup_tracing(
     # Add exporters
     if otlp_endpoint:
         # OTLP exporter for production
-        otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
+        # Note: Use insecure=False with proper TLS certificates in production
+        otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=insecure)
         _tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
         logger.info(f"OpenTelemetry OTLP exporter configured: {otlp_endpoint}")
     
@@ -175,9 +182,9 @@ class TracingHelper:
         """Trace tool execution."""
         attributes = {"tool.name": tool_name}
         if tool_args:
-            # Add sanitized tool arguments
+            # Add sanitized tool arguments (truncated to prevent excessive data)
             attributes.update({
-                f"tool.arg.{k}": str(v)[:100]  # Limit to 100 chars
+                f"tool.arg.{k}": str(v)[:MAX_TOOL_ARG_LENGTH]
                 for k, v in tool_args.items()
             })
         return trace_operation(f"tool.execute.{tool_name}", attributes)

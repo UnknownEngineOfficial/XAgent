@@ -82,7 +82,12 @@ class Settings(BaseSettings):
     # Monitoring
     prometheus_port: int = Field(default=9090, description="Prometheus metrics port")
     log_level: str = Field(default="INFO", description="Log level")
-
+    
+    # Observability - OpenTelemetry
+    otlp_endpoint: str = Field(default="", description="OTLP collector endpoint")
+    tracing_console: bool = Field(default=False, description="Enable console span exporter")
+    tracing_insecure: bool = Field(default=True, description="Use insecure OTLP connection (set False for production)")
+    
     # Celery Configuration
     celery_broker_url: str = Field(
         default="redis://localhost:6379/1", description="Celery broker URL"

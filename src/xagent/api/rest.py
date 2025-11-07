@@ -34,13 +34,12 @@ logger = get_logger(__name__)
 # Configure logging
 configure_logging()
 
-# Initialize tracing
-otlp_endpoint = os.getenv("OTLP_ENDPOINT")  # e.g., "http://jaeger:4317"
-enable_console_traces = os.getenv("TRACING_CONSOLE", "false").lower() == "true"
+# Initialize tracing using configuration
 setup_tracing(
     service_name="x-agent-api",
-    otlp_endpoint=otlp_endpoint,
-    enable_console=enable_console_traces,
+    otlp_endpoint=settings.otlp_endpoint or None,
+    enable_console=settings.tracing_console,
+    insecure=settings.tracing_insecure,
 )
 
 # Create FastAPI app

@@ -167,6 +167,12 @@ services:
       - "4318:4318"    # OTLP HTTP receiver
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory  # Use 'elasticsearch' or 'cassandra' for production
+      - MEMORY_MAX_TRACES=10000   # Maximum traces to keep in memory
+    # For production, consider adding:
+    # - Volume mount for persistent storage config
+    # - Resource limits (memory_limit, cpus)
+    # - External storage backend (Elasticsearch/Cassandra)
     restart: unless-stopped
 
 volumes:
