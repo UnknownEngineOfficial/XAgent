@@ -6,10 +6,10 @@
 
 ## Quick Status
 
-**Overall Progress**: 🟢 Production Ready (≈92%)
+**Overall Progress**: 🟢 Production Ready (≈94%)
 
-- ✅ **Agent Core**: Implemented - cognitive loop, goal engine, planner, executor
-- ✅ **Testing Infrastructure**: 191 tests (147 unit + 38 integration), 90% coverage target
+- ✅ **Agent Core**: Implemented - cognitive loop, goal engine, dual planner support (legacy + LangGraph), executor
+- ✅ **Testing Infrastructure**: 339 tests (220 unit + 119 integration), 90% coverage target
 - ✅ **Health Checks**: Production-ready health endpoints implemented (/health, /healthz, /ready)
 - ✅ **APIs**: REST endpoints fully tested with integration tests
 - ✅ **CI/CD**: GitHub Actions running tests, linters, and coverage
@@ -73,13 +73,25 @@ Build an autonomous, self-thinking AI agent capable of:
 - ✅ Priority management
 - **Tests**: `tests/unit/test_goal_engine.py` (16 tests)
 
-##### Planner (`src/xagent/core/planner.py`)
+##### Planner - Legacy (`src/xagent/core/planner.py`)
 - ✅ Rule-based planning fallback
 - ✅ LLM-based planning with OpenAI
 - ✅ Plan quality evaluation
 - ✅ Goal decomposition
 - 🟡 Multi-step plan refinement
 - **Tests**: `tests/unit/test_planner.py` (10 tests)
+
+##### LangGraph Planner (`src/xagent/planning/langgraph_planner.py`) ✅ **COMPLETE**
+- ✅ Multi-stage planning workflow (5 phases: analyze, decompose, prioritize, validate, execute)
+- ✅ Goal complexity analysis (low/medium/high)
+- ✅ Automatic goal decomposition into sub-goals
+- ✅ Dependency tracking and prioritization
+- ✅ Plan quality validation with scoring
+- ✅ LLM-ready architecture (currently rule-based)
+- ✅ Integration with agent orchestration
+- ✅ Configuration toggle (`use_langgraph_planner` setting)
+- ✅ Backward compatibility with legacy planner
+- **Tests**: `tests/unit/test_langgraph_planner.py` (24 tests) + `tests/integration/test_langgraph_planner_integration.py` (19 tests) + `tests/integration/test_agent_planner_integration.py` (12 tests)
 
 ##### Executor (`src/xagent/core/executor.py`)
 - ✅ Action execution framework
@@ -99,8 +111,11 @@ Build an autonomous, self-thinking AI agent capable of:
 
 ##### Agent (`src/xagent/core/agent.py`)
 - ✅ Main agent orchestration
-- 🟡 Integration with all components
-- ⚠️ Needs integration tests
+- ✅ Integration with all components
+- ✅ Dual planner support (legacy + LangGraph)
+- ✅ Configuration-based planner selection
+- ✅ Planner type status reporting
+- **Tests**: `tests/integration/test_agent_planner_integration.py` (12 tests)
 
 ---
 
@@ -207,6 +222,7 @@ Build an autonomous, self-thinking AI agent capable of:
 - ✅ Redis configuration
 - ✅ Security settings
 - ✅ Monitoring configuration
+- ✅ Planner selection (`use_langgraph_planner` flag)
 - **Tests**: `tests/unit/test_config.py` (19 tests)
 
 ---
@@ -551,15 +567,16 @@ This document should be updated whenever significant features are implemented or
 | 2025-11-07 | Phase 3 tools completed: Web search & HTTP request tools + 40 integration tests | Copilot |
 | 2025-11-07 | Phase 3 Week 7-8 COMPLETE: Celery task queue + worker config + monitoring | Copilot |
 | 2025-11-07 | Phase 4 started: LangGraph planner implementation with 43 comprehensive tests | Copilot |
+| 2025-11-07 | Phase 4 integration: LangGraph planner integrated with agent orchestration + 12 tests | Copilot |
 
 ### Progress Metrics
 
 - **Total Features**: 50+
 - **Completed**: ~50 (100%) ✅
-- **In Progress**: 1 (Phase 4 - 75% complete)
+- **In Progress**: 1 (Phase 4 - 85% complete)
 - **Planned/Not Started**: 1 (Phase 5)
 - **Test Coverage**: 90% target (core modules)
-- **Test Count**: 327 tests (220 unit + 107 integration) ⬆️
+- **Test Count**: 339 tests (220 unit + 119 integration) ⬆️
 - **P0 Critical Items**: 4/4 complete (100%) ✅
   - Health checks ✅
   - CI/CD ✅
@@ -590,14 +607,14 @@ This document should be updated whenever significant features are implemented or
   - Task queue (Celery) ✅
   - Worker configuration ✅
   - Task monitoring ✅
-- **Phase 4 (Planning & Orchestration)**: 6/8 complete (75%) 🟡 **IN PROGRESS**
-  - LangGraph planner implementation ✅ **NEW**
-  - Multi-stage planning workflow (5 phases) ✅ **NEW**
-  - Goal complexity analysis ✅ **NEW**
-  - Automatic goal decomposition ✅ **NEW**
-  - Action prioritization ✅ **NEW**
-  - Plan quality validation ✅ **NEW**
-  - Integration with agent orchestration ⚠️
+- **Phase 4 (Planning & Orchestration)**: 7/8 complete (85%) 🟡 **IN PROGRESS**
+  - LangGraph planner implementation ✅
+  - Multi-stage planning workflow (5 phases) ✅
+  - Goal complexity analysis ✅
+  - Automatic goal decomposition ✅
+  - Action prioritization ✅
+  - Plan quality validation ✅
+  - Integration with agent orchestration ✅ **COMPLETE**
   - CrewAI evaluation ⚠️
 
 ### Next Review Date
