@@ -108,7 +108,17 @@ class Settings(BaseSettings):
             f'/{self.postgres_db}',
             '', '', ''
         ))
+    
+    @property
+    def SECRET_KEY(self) -> str:
+        """Alias for secret_key (backward compatibility)."""
+        return self.secret_key
 
 
 # Global settings instance
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get settings instance (for dependency injection)."""
+    return settings
