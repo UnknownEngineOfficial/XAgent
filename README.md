@@ -354,9 +354,24 @@ while not stopped:
 
 Detaillierte Dokumentation verfügbar:
 
+- **[FEATURES.md](docs/FEATURES.md)**: Vollständige Feature-Dokumentation und Status
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Vollständige Architektur-Dokumentation
 - **[QUICKSTART.md](docs/QUICKSTART.md)**: Schnellstart-Anleitung mit Beispielen
+- **[INTEGRATION_ROADMAP.md](docs/INTEGRATION_ROADMAP.md)**: 🆕 Open-Source Integrations-Roadmap
+- **[INTEGRATION_QUICK_REF.md](docs/INTEGRATION_QUICK_REF.md)**: 🆕 Schnellreferenz für Entwickler
 - **API Docs**: http://localhost:8000/docs (nach Start)
+
+### Open-Source Integration Strategy 🚀
+
+X-Agent nutzt bewährte Open-Source-Komponenten statt alles von Grund auf zu entwickeln:
+
+- **Sicherheit**: OPA (Open Policy Agent) + Authlib für Authentifizierung
+- **Monitoring**: Prometheus + Grafana + OpenTelemetry für vollständige Observability
+- **Tools**: LangServe für standardisierte Tool-Schnittstellen
+- **Planung**: LangGraph + CrewAI für erweiterte Planungs-Workflows
+- **CLI**: Typer für moderne Kommandozeilen-Schnittstelle
+
+👉 **Siehe [FEATURES.md Abschnitt 10](docs/FEATURES.md#10-open-source-component-integration-strategy-)** für die vollständige Strategie
 
 ### Technologie-Stack
 
