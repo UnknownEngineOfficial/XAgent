@@ -454,11 +454,40 @@ Der Autonome X-Agent integriert sich in bestehende XTeam-Features:
 
 ---
 
+## 🧪 Testing & Quality Assurance
+
+X-Agent maintains comprehensive test coverage with a central control point for quality assurance.
+
+### Test Coverage
+
+- **Core Modules Coverage**: **97.15%** ✅ (exceeds 90% target)
+- **Total Unit Tests**: 76 tests
+- **Central Control**: `scripts/run_tests.py`
+
+### Running Tests
+
+```bash
+# Using the central control script
+python scripts/run_tests.py --core      # Show core modules coverage
+python scripts/run_tests.py --report    # Generate HTML report
+python scripts/run_tests.py --strict    # Enforce 90% threshold
+
+# Using Make
+make test                               # Run all tests
+make test-cov                           # Run with coverage
+make test-cov-report                    # Run with 90% threshold enforcement
+```
+
+For detailed testing documentation, see [docs/TESTING.md](docs/TESTING.md).
+
+---
+
 ## 📚 Referenzen
 
 - **FEATURES.md**: Hauptdokument für alle Features
 - **docs/ENTWICKLUNGSSTAND.md**: Entwicklungsstatus
 - **docs/ACTION_ITEMS.md**: Aktuelle Aufgaben
+- **docs/TESTING.md**: Test coverage documentation
 
 ---
 
