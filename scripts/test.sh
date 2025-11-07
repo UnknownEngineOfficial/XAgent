@@ -53,6 +53,8 @@ echo "================================================"
 echo ""
 
 # Coverage threshold (can be overridden via environment variable)
+# Default is 0 because overall coverage is low (~20%) while core modules have 90%+
+# Set COVERAGE_THRESHOLD=80 or higher when you want to enforce a minimum threshold
 COVERAGE_THRESHOLD="${COVERAGE_THRESHOLD:-0}"
 
 # Run coverage with configurable threshold

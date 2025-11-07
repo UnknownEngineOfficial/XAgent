@@ -84,6 +84,8 @@ class HealthCheck:
             import chromadb
             
             # ChromaDB client initialization is lightweight
+            # Just instantiating the client verifies the library is available
+            # and can be imported without errors
             client = chromadb.Client()
             return True, None
         except ImportError:
