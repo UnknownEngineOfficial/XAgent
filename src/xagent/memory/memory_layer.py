@@ -30,7 +30,7 @@ class MemoryEntry(Base):
     id = Column(String, primary_key=True)
     content = Column(Text, nullable=False)
     memory_type = Column(String, nullable=False)  # short, medium, long
-    metadata = Column(JSONB, default={})
+    entry_metadata = Column(JSONB, default={})  # Renamed from 'metadata' to avoid SQLAlchemy conflict
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expires_at = Column(DateTime, nullable=True)
