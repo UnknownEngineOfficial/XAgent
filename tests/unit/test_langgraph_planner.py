@@ -361,7 +361,7 @@ class TestPlanValidation:
             "estimated_steps": 2,
             "sub_goals": [],
             "dependencies": [],
-            "prioritized_actions": [],  # No actions
+            "prioritized_actions": [],  # No actions (but will be auto-generated now)
             "plan": None,
             "quality_score": None,
             "errors": [],
@@ -369,8 +369,10 @@ class TestPlanValidation:
         
         result = await planner._validate_plan(state)
         
-        assert result["quality_score"] == 0.0
-        assert len(result["errors"]) > 0
+        # Now validation auto-generates actions for simple goals
+        # So quality_score should be > 0
+        assert result["quality_score"] > 0.0
+        assert len(result["prioritized_actions"]) > 0
 
 
 class TestPlanExecution:
@@ -520,7 +522,8 @@ class TestWorkflowConditionals:
         }
         
         result = planner._should_continue_to_prioritize(state)
-        assert result == "execute"
+        # Now skips to validate instead of execute
+        assert result == "validate"
     
     def test_should_replan_with_low_quality(self, planner):
         """Test replan decision with low quality score."""

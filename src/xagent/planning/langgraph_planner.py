@@ -103,7 +103,7 @@ class LangGraphPlanner:
             self._should_continue_to_prioritize,
             {
                 "prioritize": "prioritize",
-                "execute": "execute",  # Skip to execute if no decomposition needed
+                "validate": "validate",  # Skip to validate if no decomposition needed
             }
         )
         workflow.add_edge("prioritize", "validate")
@@ -173,10 +173,10 @@ class LangGraphPlanner:
         criteria_count = len(state["completion_criteria"])
         
         # Simple heuristic for complexity
-        if criteria_count > 5 or len(description.split()) > 50:
+        if criteria_count >= 5 or len(description.split()) > 50:
             complexity = "high"
             estimated_steps = 8
-        elif criteria_count > 2 or len(description.split()) > 20:
+        elif criteria_count >= 3 or len(description.split()) > 20:
             complexity = "medium"
             estimated_steps = 4
         else:
@@ -308,7 +308,21 @@ class LangGraphPlanner:
         quality_score = 0.0
         errors = []
         
-        # Check if we have actions
+        # If we skipped prioritization, generate a simple action now
+        if not state["prioritized_actions"]:
+            # Create direct action for simple goals
+            state["prioritized_actions"] = [{
+                "type": "direct",
+                "action": "work_on_goal",
+                "parameters": {
+                    "goal_id": state["goal_id"],
+                    "description": state["goal_description"],
+                },
+                "priority": 0,
+                "reasoning": "Direct goal execution without decomposition",
+            }]
+        
+        # Validate actions
         if not state["prioritized_actions"]:
             errors.append("No actions generated")
             quality_score = 0.0
@@ -384,11 +398,12 @@ class LangGraphPlanner:
         return state
     
     def _should_continue_to_prioritize(self, state: PlanningState) -> str:
-        """Decide whether to continue to prioritization or skip to execution."""
+        """Decide whether to continue to prioritization or skip to validation."""
         if state["sub_goals"]:
             return "prioritize"
         else:
-            return "execute"
+            # Skip prioritization but go to validate to get quality score
+            return "validate"
     
     def _should_replan(self, state: PlanningState) -> str:
         """Decide whether to execute plan or re-analyze."""
