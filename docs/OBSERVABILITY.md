@@ -1,12 +1,12 @@
 # X-Agent Observability Stack
 
-**Version**: 1.0  
+**Version**: 1.1  
 **Last Updated**: 2025-11-07  
 **Status**: Production Ready
 
 ## Overview
 
-X-Agent includes a comprehensive observability stack for monitoring, tracing, and analyzing agent performance in production environments.
+X-Agent includes a comprehensive observability stack for monitoring, tracing, logging, and analyzing agent performance in production environments.
 
 ### Components
 
@@ -14,6 +14,8 @@ X-Agent includes a comprehensive observability stack for monitoring, tracing, an
 2. **Grafana** - Metrics visualization and dashboards
 3. **Jaeger** - Distributed tracing
 4. **OpenTelemetry** - Instrumentation framework
+5. **Loki** - Log aggregation and storage
+6. **Promtail** - Log collection and forwarding
 
 ---
 
@@ -24,7 +26,7 @@ X-Agent includes a comprehensive observability stack for monitoring, tracing, an
 Start the full observability stack:
 
 ```bash
-docker-compose up -d prometheus grafana jaeger
+docker-compose up -d prometheus grafana jaeger loki promtail
 ```
 
 Access the services:
@@ -32,6 +34,7 @@ Access the services:
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Jaeger UI**: http://localhost:16686
+- **Loki**: http://localhost:3100
 - **Metrics Endpoint**: http://localhost:8000/metrics
 
 ---
@@ -234,6 +237,120 @@ with trace_operation("complex_operation"):
 
 ---
 
+## Log Aggregation
+
+### Loki and Promtail
+
+X-Agent uses Loki for centralized log aggregation and Promtail for log collection from containers and files.
+
+### Log Collection
+
+#### Application Logs
+
+All X-Agent services output structured JSON logs with the following fields:
+
+```json
+{
+  "timestamp": "2025-11-07T12:34:56.789Z",
+  "level": "info",
+  "event": "Request processed",
+  "logger": "xagent.api.rest",
+  "trace_id": "0123456789abcdef0123456789abcdef",
+  "span_id": "0123456789abcdef",
+  "user_id": "user-123",
+  "request_id": "req-456"
+}
+```
+
+#### Log Correlation with Traces
+
+Logs automatically include `trace_id` and `span_id` when within an active span, enabling correlation between logs and traces:
+
+```python
+from xagent.utils.logging import get_logger
+from xagent.monitoring.tracing import trace_operation
+
+logger = get_logger(__name__)
+
+with trace_operation("process_request"):
+    logger.info("Processing request", user_id="user-123")
+    # Log will include trace_id and span_id automatically
+```
+
+### Querying Logs
+
+#### Using Grafana Explore
+
+1. Open Grafana: http://localhost:3000
+2. Navigate to Explore (compass icon)
+3. Select "Loki" data source
+4. Use LogQL queries:
+
+```logql
+# All logs from xagent
+{job="xagent"}
+
+# Error logs only
+{job="xagent"} |= "ERROR"
+
+# Logs for a specific trace
+{job="xagent"} | json | trace_id="0123456789abcdef0123456789abcdef"
+
+# Logs by service
+{service="xagent-api"}
+
+# Logs with specific logger
+{job="xagent"} | json | logger="xagent.core.agent"
+
+# Rate of errors in last 5 minutes
+sum(rate({job="xagent"} |= "ERROR" [5m]))
+
+# Top 10 loggers by log volume
+topk(10, sum by (logger) (count_over_time({job="xagent"}[1h])))
+```
+
+#### Using Logs Dashboard
+
+Pre-configured dashboard available at: `config/grafana/dashboards/logs.json`
+
+Features:
+- Real-time log streaming
+- Error and warning log panels
+- Log rate by level and logger
+- Docker container logs
+- Log search and filtering
+
+### Log Retention
+
+#### Development
+
+- Loki: 7 days retention
+- File logs: 30 days rotation
+
+#### Production
+
+Configure in `config/loki-config.yml`:
+
+```yaml
+limits_config:
+  retention_period: 720h  # 30 days
+  
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 720h
+```
+
+### Log Parsing
+
+Promtail automatically parses:
+- JSON-formatted application logs
+- Docker container logs
+- Structured log fields as labels
+
+Custom parsing rules in `config/promtail-config.yml`.
+
+---
+
 ## Grafana Dashboards
 
 ### Pre-configured Dashboards
@@ -262,19 +379,37 @@ Panels:
 - Error rate gauge
 - Authentication attempts
 
+#### 3. Logs Dashboard
+
+**File**: `config/grafana/dashboards/logs.json`
+
+Panels:
+- Real-time application logs
+- Error and warning log streams
+- Log rate by level
+- Log rate by logger
+- Docker container logs
+- Log volume trends
+
 ### Accessing Dashboards
 
 1. Open Grafana: http://localhost:3000
 2. Login: admin/admin
 3. Navigate to Dashboards
-4. Select "X-Agent - Agent Performance" or "X-Agent - API Health"
+4. Select:
+   - "X-Agent - Agent Performance"
+   - "X-Agent - API Health"
+   - "X-Agent - Logs"
 
 ### Creating Custom Dashboards
 
 1. Click "+" → "Dashboard" in Grafana
 2. Add Panel
-3. Select Prometheus data source
-4. Enter PromQL query
+3. Select data source:
+   - Prometheus for metrics
+   - Jaeger for traces
+   - Loki for logs
+4. Enter query (PromQL, TraceQL, or LogQL)
 5. Configure visualization
 6. Save dashboard
 
@@ -288,6 +423,9 @@ Panels:
 # OpenTelemetry
 OTLP_ENDPOINT=http://jaeger:4317  # Jaeger OTLP collector endpoint
 TRACING_CONSOLE=false              # Enable console span exporter for debugging
+
+# Loki
+# No environment variables needed - logs automatically forwarded by Promtail
 
 # Prometheus (automatic scraping)
 # No additional config needed - metrics exposed at /metrics
@@ -469,10 +607,11 @@ When investigating issues:
 
 ## Next Steps
 
-1. **Phase 3**: Add Loki for log aggregation
+1. ~~**Phase 3**: Add Loki for log aggregation~~ ✅ **COMPLETE**
 2. **Phase 4**: Implement alerting with AlertManager
 3. **Phase 5**: Create performance testing dashboards
 4. **Phase 6**: Add business metrics and KPIs
+5. **Phase 7**: Implement log-based alerting rules
 
 ---
 
@@ -482,6 +621,8 @@ When investigating issues:
 - [Grafana Documentation](https://grafana.com/docs/)
 - [Jaeger Documentation](https://www.jaegertracing.io/docs/)
 - [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
+- [Loki Documentation](https://grafana.com/docs/loki/)
+- [Promtail Documentation](https://grafana.com/docs/loki/latest/clients/promtail/)
 
 ---
 

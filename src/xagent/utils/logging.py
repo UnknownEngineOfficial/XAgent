@@ -5,7 +5,25 @@ import structlog
 from pathlib import Path
 from typing import Any
 
+from opentelemetry import trace
+
 from xagent.config import settings
+
+
+def add_trace_context(logger, method_name, event_dict):
+    """
+    Add OpenTelemetry trace context to log events.
+    
+    This processor adds trace_id and span_id to logs when available,
+    enabling correlation between logs and traces.
+    """
+    span = trace.get_current_span()
+    if span and span.is_recording():
+        ctx = span.get_span_context()
+        if ctx.is_valid:
+            event_dict["trace_id"] = f"{ctx.trace_id:032x}"
+            event_dict["span_id"] = f"{ctx.span_id:016x}"
+    return event_dict
 
 
 def configure_logging() -> None:
@@ -23,11 +41,11 @@ def configure_logging() -> None:
             structlog.stdlib.add_log_level,
             structlog.stdlib.PositionalArgumentsFormatter(),
             structlog.processors.TimeStamper(fmt="iso"),
+            add_trace_context,  # Add trace context to logs
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer() if settings.log_level == "DEBUG"
-            else structlog.dev.ConsoleRenderer(),
+            structlog.processors.JSONRenderer(),  # Always use JSON for Loki
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
