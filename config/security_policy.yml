@@ -1,0 +1,57 @@
+# Security Policy Configuration for X-Agent
+
+rules:
+  # File system protection
+  - name: "no_delete_without_confirmation"
+    type: "require_confirmation"
+    condition: "delete"
+    message: "File deletion requires user confirmation"
+
+  - name: "protect_system_files"
+    type: "block"
+    condition: "system /etc /sys /proc"
+    message: "Access to system directories is prohibited"
+
+  # API and network protection
+  - name: "rate_limit_api_calls"
+    type: "block"
+    condition: "api rate_limit_exceeded"
+    message: "API rate limit exceeded - please wait before retrying"
+
+  - name: "whitelist_network_access"
+    type: "require_confirmation"
+    condition: "network external"
+    message: "External network access requires confirmation"
+
+  # Data protection
+  - name: "no_sensitive_data_exposure"
+    type: "block"
+    condition: "password token secret key credential"
+    message: "Exposure of sensitive data is prohibited"
+
+  - name: "backup_before_modification"
+    type: "require_confirmation"
+    condition: "modify production"
+    message: "Production modifications require backup confirmation"
+
+  # Execution safety
+  - name: "sandbox_code_execution"
+    type: "allow"
+    condition: "execute code sandbox"
+    message: "Code execution in sandbox is allowed"
+
+  - name: "block_unsafe_code"
+    type: "block"
+    condition: "exec eval __import__"
+    message: "Unsafe code execution patterns are blocked"
+
+  # Resource limits
+  - name: "limit_concurrent_operations"
+    type: "block"
+    condition: "concurrent operations_exceeded"
+    message: "Too many concurrent operations"
+
+  - name: "memory_limit"
+    type: "block"
+    condition: "memory limit_exceeded"
+    message: "Memory limit exceeded"

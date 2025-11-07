@@ -1,0 +1,96 @@
+"""Configuration management for X-Agent."""
+
+from typing import Optional
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Application settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # API Keys
+    openai_api_key: str = Field(default="", description="OpenAI API key")
+    anthropic_api_key: str = Field(default="", description="Anthropic API key")
+
+    # Redis Configuration
+    redis_host: str = Field(default="localhost", description="Redis host")
+    redis_port: int = Field(default=6379, description="Redis port")
+    redis_password: str = Field(default="", description="Redis password")
+    redis_db: int = Field(default=0, description="Redis database")
+
+    # PostgreSQL Configuration
+    postgres_host: str = Field(default="localhost", description="PostgreSQL host")
+    postgres_port: int = Field(default=5432, description="PostgreSQL port")
+    postgres_db: str = Field(default="xagent", description="PostgreSQL database")
+    postgres_user: str = Field(default="xagent", description="PostgreSQL user")
+    postgres_password: str = Field(default="", description="PostgreSQL password")
+
+    # ChromaDB Configuration
+    chroma_host: str = Field(default="localhost", description="ChromaDB host")
+    chroma_port: int = Field(default=8000, description="ChromaDB port")
+    chroma_persist_directory: str = Field(
+        default="./data/chroma", description="ChromaDB persist directory"
+    )
+
+    # Server Configuration
+    api_host: str = Field(default="0.0.0.0", description="API host")
+    api_port: int = Field(default=8000, description="API port")
+    ws_host: str = Field(default="0.0.0.0", description="WebSocket host")
+    ws_port: int = Field(default=8001, description="WebSocket port")
+
+    # Security
+    secret_key: str = Field(
+        default="change-me-in-production", description="Secret key for JWT"
+    )
+    jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
+    jwt_expiration_minutes: int = Field(default=60, description="JWT expiration in minutes")
+
+    # Agent Configuration
+    agent_name: str = Field(default="X-Agent", description="Agent name")
+    agent_mode: str = Field(
+        default="interactive", description="Agent mode: interactive, focus, idle, emergency"
+    )
+    max_iterations: int = Field(default=100, description="Maximum iterations per task")
+    loop_delay_seconds: float = Field(default=1.0, description="Delay between loop iterations")
+
+    # Tool Configuration
+    enable_code_tools: bool = Field(default=True, description="Enable code tools")
+    enable_search_tools: bool = Field(default=True, description="Enable search tools")
+    enable_file_tools: bool = Field(default=True, description="Enable file tools")
+    enable_network_tools: bool = Field(default=True, description="Enable network tools")
+    sandbox_enabled: bool = Field(default=True, description="Enable sandbox for tool execution")
+
+    # Monitoring
+    prometheus_port: int = Field(default=9090, description="Prometheus metrics port")
+    log_level: str = Field(default="INFO", description="Log level")
+
+    # Celery Configuration
+    celery_broker_url: str = Field(
+        default="redis://localhost:6379/1", description="Celery broker URL"
+    )
+    celery_result_backend: str = Field(
+        default="redis://localhost:6379/2", description="Celery result backend"
+    )
+
+    @property
+    def redis_url(self) -> str:
+        """Get Redis connection URL."""
+        if self.redis_password:
+            return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
+        return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
+
+    @property
+    def postgres_url(self) -> str:
+        """Get PostgreSQL connection URL."""
+        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+
+
+# Global settings instance
+settings = Settings()
