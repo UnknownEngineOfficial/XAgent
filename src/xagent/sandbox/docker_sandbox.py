@@ -183,6 +183,7 @@ class DockerSandbox:
                 remove=False,  # Don't auto-remove so we can get logs
                 security_opt=["no-new-privileges"],  # Security hardening
                 cap_drop=["ALL"],  # Drop all capabilities
+                labels={"xagent-sandbox": "true"},  # Label for cleanup
             )
             
             # Wait for container with timeout

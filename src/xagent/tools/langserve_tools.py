@@ -1,6 +1,11 @@
 """LangServe-based tool definitions for X-Agent."""
 
 from typing import Any, Dict, Optional
+import uuid
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
 from langchain.tools import tool
 from langchain.pydantic_v1 import BaseModel, Field
 
@@ -134,9 +139,6 @@ def think(thought: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, A
     Returns:
         Confirmation with thought ID
     """
-    import uuid
-    from datetime import datetime, timezone
-    
     thought_id = f"thought_{uuid.uuid4().hex[:8]}"
     
     result = {
@@ -166,9 +168,6 @@ def read_file(path: str, max_lines: Optional[int] = None) -> Dict[str, Any]:
     Returns:
         Dictionary with file contents and metadata
     """
-    import os
-    from pathlib import Path
-    
     try:
         # Security: Only allow reading from workspace
         file_path = Path(path).resolve()
@@ -235,8 +234,6 @@ def write_file(
     Returns:
         Dictionary with write confirmation and metadata
     """
-    from pathlib import Path
-    
     try:
         # Security: Only allow writing to workspace
         file_path = Path(path).resolve()
