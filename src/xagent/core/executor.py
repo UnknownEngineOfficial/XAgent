@@ -1,7 +1,7 @@
 """Executor - Action execution for X-Agent."""
 
 from typing import Any, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from xagent.utils.logging import get_logger
 
@@ -43,7 +43,7 @@ class Executor:
         result = {
             "action_type": action_type,
             "action": action,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "success": False,
             "output": None,
             "error": None,
@@ -76,7 +76,7 @@ class Executor:
         return {
             "thought": f"Analyzed: {action}",
             "parameters": parameters,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     
     async def _execute_tool_call(
@@ -97,7 +97,7 @@ class Executor:
         return {
             "action": "create_goal",
             "description": parameters.get("content"),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     
     async def _execute_start_goal(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -105,5 +105,5 @@ class Executor:
         return {
             "action": "start_goal",
             "goal_id": parameters.get("goal_id"),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }

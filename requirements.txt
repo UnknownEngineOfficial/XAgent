@@ -38,3 +38,7 @@ opentelemetry-api>=1.21.0
 opentelemetry-sdk>=1.21.0
 opentelemetry-instrumentation-fastapi>=0.42b0
 opentelemetry-exporter-otlp>=1.21.0
+
+# Task & Tool Management (Phase 3)
+langserve>=0.0.40
+docker>=7.0.0

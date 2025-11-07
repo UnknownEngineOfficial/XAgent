@@ -3,7 +3,7 @@
 from typing import Any, Dict, Set
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -121,7 +121,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     await manager.send_to_client(websocket, {
         "type": "connected",
         "message": "Connected to X-Agent",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
     
     try:
@@ -155,14 +155,14 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     await manager.send_to_client(websocket, {
                         "type": "error",
                         "message": f"Unknown message type: {message_type}",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                     })
                     
             except json.JSONDecodeError:
                 await manager.send_to_client(websocket, {
                     "type": "error",
                     "message": "Invalid JSON",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
                 
     except WebSocketDisconnect:
@@ -178,7 +178,7 @@ async def handle_command(websocket: WebSocket, message: Dict[str, Any]) -> None:
         await manager.send_to_client(websocket, {
             "type": "error",
             "message": "Agent not initialized",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return
     
@@ -188,14 +188,14 @@ async def handle_command(websocket: WebSocket, message: Dict[str, Any]) -> None:
     await manager.send_to_client(websocket, {
         "type": "command_received",
         "command": command,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
     
     # Broadcast to other clients
     await manager.broadcast({
         "type": "command_broadcast",
         "command": command,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -207,7 +207,7 @@ async def handle_feedback(websocket: WebSocket, message: Dict[str, Any]) -> None
         await manager.send_to_client(websocket, {
             "type": "error",
             "message": "Agent not initialized",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return
     
@@ -217,7 +217,7 @@ async def handle_feedback(websocket: WebSocket, message: Dict[str, Any]) -> None
     await manager.send_to_client(websocket, {
         "type": "feedback_received",
         "feedback": feedback,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -227,7 +227,7 @@ async def handle_status_request(websocket: WebSocket) -> None:
         await manager.send_to_client(websocket, {
             "type": "error",
             "message": "Agent not initialized",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return
     
@@ -236,7 +236,7 @@ async def handle_status_request(websocket: WebSocket) -> None:
     await manager.send_to_client(websocket, {
         "type": "status",
         "data": status,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -246,7 +246,7 @@ async def handle_start(websocket: WebSocket, message: Dict[str, Any]) -> None:
         await manager.send_to_client(websocket, {
             "type": "error",
             "message": "Agent not initialized",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return
     
@@ -257,13 +257,13 @@ async def handle_start(websocket: WebSocket, message: Dict[str, Any]) -> None:
     await manager.send_to_client(websocket, {
         "type": "started",
         "message": "Agent started",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
     
     # Broadcast to other clients
     await manager.broadcast({
         "type": "agent_started",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -273,7 +273,7 @@ async def handle_stop(websocket: WebSocket) -> None:
         await manager.send_to_client(websocket, {
             "type": "error",
             "message": "Agent not initialized",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return
     
@@ -283,11 +283,11 @@ async def handle_stop(websocket: WebSocket) -> None:
     await manager.send_to_client(websocket, {
         "type": "stopped",
         "message": "Agent stopped",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
     
     # Broadcast to other clients
     await manager.broadcast({
         "type": "agent_stopped",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })

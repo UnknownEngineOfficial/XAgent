@@ -3,7 +3,7 @@
 from typing import Any, Dict, Optional, List
 from enum import Enum
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 from xagent.core.goal_engine import GoalEngine, GoalStatus, Goal
 from xagent.memory.memory_layer import MemoryLayer
@@ -145,7 +145,7 @@ class CognitiveLoop:
             Perception data
         """
         perception = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "inputs": [],
             "active_goal": None,
         }
@@ -178,7 +178,7 @@ class CognitiveLoop:
             Interpreted context
         """
         context = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "active_goal": perception.get("active_goal"),
             "inputs": perception.get("inputs", []),
             "memory_context": {},
@@ -257,7 +257,7 @@ class CognitiveLoop:
             Execution result
         """
         result = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "plan": plan,
             "success": False,
             "output": None,
@@ -301,7 +301,7 @@ class CognitiveLoop:
             goal_actions.append({
                 "iteration": self.iteration_count,
                 "result": result,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
             await self.memory.save_medium_term(
                 f"goal:{active_goal.id}:actions",
