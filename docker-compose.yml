@@ -75,6 +75,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      opa:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
@@ -87,6 +89,8 @@ services:
       - POSTGRES_PASSWORD=xagent_password
       - CHROMA_PERSIST_DIRECTORY=/app/data/chroma
       - OTLP_ENDPOINT=http://jaeger:4317
+      - OPA_URL=http://opa:8181
+      - OPA_ENABLED=true
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -174,6 +178,28 @@ services:
     # - Resource limits (memory_limit, cpus)
     # - External storage backend (Elasticsearch/Cassandra)
     restart: unless-stopped
+
+  # OPA (Open Policy Agent) for policy enforcement
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: xagent-opa
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=info"
+      - "/policies"
+    volumes:
+      - ./config/policies:/policies
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
 volumes:
   redis_data:
