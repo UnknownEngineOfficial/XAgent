@@ -24,3 +24,17 @@ python-dotenv>=1.0.0
 prometheus-client>=0.19.0
 structlog>=24.1.0
 tenacity>=8.2.3
+
+# Security & Policy (Phase 2)
+authlib>=1.6.5
+itsdangerous>=2.1.0
+
+# CLI Enhancement (Phase 5)
+typer>=0.9.0
+rich>=13.7.0
+
+# Observability - Tracing (Phase 2)
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-instrumentation-fastapi>=0.42b0
+opentelemetry-exporter-otlp>=1.21.0
