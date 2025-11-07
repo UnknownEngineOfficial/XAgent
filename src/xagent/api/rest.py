@@ -3,7 +3,7 @@
 from typing import Any, Dict, Optional
 from datetime import datetime, timedelta
 
-from fastapi import FastAPI, HTTPException, Depends, Security
+from fastapi import FastAPI, HTTPException, Depends, Security, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -23,6 +23,7 @@ from xagent.security.auth import (
     optional_auth,
     get_auth_manager,
 )
+from xagent.monitoring.metrics import get_metrics_collector
 
 logger = get_logger(__name__)
 
@@ -410,3 +411,24 @@ async def readiness_check() -> Dict[str, Any]:
     
     from fastapi.responses import JSONResponse
     return JSONResponse(content=readiness_status, status_code=status_code)
+
+
+@app.get("/metrics", tags=["Monitoring"])
+async def metrics_endpoint(
+    current_user: Optional[User] = Depends(optional_auth),
+) -> Response:
+    """
+    Prometheus metrics endpoint.
+    
+    Public endpoint that exposes Prometheus-compatible metrics.
+    Provides more detailed metrics when authenticated with SYSTEM_METRICS scope.
+    """
+    metrics_collector = get_metrics_collector()
+    
+    # Get metrics in Prometheus format
+    metrics_data = metrics_collector.get_metrics()
+    
+    return Response(
+        content=metrics_data,
+        media_type=metrics_collector.get_content_type(),
+    )
