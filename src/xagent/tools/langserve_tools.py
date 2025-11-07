@@ -5,9 +5,11 @@ import uuid
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 
 from langchain.tools import tool
 from pydantic import BaseModel, Field
+import httpx
 
 from xagent.sandbox.docker_sandbox import DockerSandbox
 from xagent.utils.logging import get_logger
@@ -73,6 +75,42 @@ class FileWriteInput(BaseModel):
     append: bool = Field(
         default=False,
         description="Whether to append to existing file"
+    )
+
+
+class WebSearchInput(BaseModel):
+    """Input schema for web search/fetch tool."""
+    
+    url: str = Field(description="URL to fetch content from")
+    extract_text: bool = Field(
+        default=True,
+        description="Whether to extract and clean text from HTML"
+    )
+    max_length: Optional[int] = Field(
+        default=10000,
+        description="Maximum content length to return"
+    )
+
+
+class HTTPRequestInput(BaseModel):
+    """Input schema for HTTP request tool."""
+    
+    url: str = Field(description="URL to send the request to")
+    method: str = Field(
+        default="GET",
+        description="HTTP method (GET, POST, PUT, DELETE)"
+    )
+    headers: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="HTTP headers to include"
+    )
+    body: Optional[str] = Field(
+        default=None,
+        description="Request body for POST/PUT"
+    )
+    timeout: int = Field(
+        default=30,
+        description="Request timeout in seconds"
     )
 
 
@@ -267,12 +305,163 @@ def write_file(
         }
 
 
+@tool
+async def web_search(
+    url: str,
+    extract_text: bool = True,
+    max_length: int = 10000
+) -> Dict[str, Any]:
+    """
+    Fetch and extract content from a web page.
+    
+    This tool fetches content from a URL and optionally extracts
+    clean text from HTML. Useful for web scraping and research.
+    
+    Args:
+        url: URL to fetch content from
+        extract_text: Whether to extract and clean text from HTML (default: True)
+        max_length: Maximum content length to return (default: 10000)
+    
+    Returns:
+        Dictionary with:
+        - status: "success" or "error"
+        - url: The fetched URL
+        - content: The page content (text or HTML)
+        - content_type: Content type from response
+        - length: Content length
+        - error: Error message if any
+    """
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            
+            content = response.text
+            content_type = response.headers.get("content-type", "")
+            
+            # Extract text from HTML if requested
+            if extract_text and "html" in content_type.lower():
+                # Simple HTML tag removal
+                content = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.DOTALL | re.IGNORECASE)
+                content = re.sub(r'<style[^>]*>.*?</style>', '', content, flags=re.DOTALL | re.IGNORECASE)
+                content = re.sub(r'<[^>]+>', ' ', content)
+                # Clean up whitespace
+                content = re.sub(r'\s+', ' ', content)
+                content = content.strip()
+            
+            # Truncate if too long
+            if len(content) > max_length:
+                content = content[:max_length] + "..."
+            
+            logger.info(f"Fetched content from {url} ({len(content)} chars)")
+            
+            return {
+                "status": "success",
+                "url": url,
+                "content": content,
+                "content_type": content_type,
+                "length": len(content),
+                "status_code": response.status_code,
+            }
+            
+    except httpx.HTTPError as e:
+        logger.error(f"HTTP error fetching {url}: {e}")
+        return {
+            "status": "error",
+            "url": url,
+            "error": f"HTTP error: {str(e)}",
+        }
+    except Exception as e:
+        logger.error(f"Error fetching {url}: {e}")
+        return {
+            "status": "error",
+            "url": url,
+            "error": str(e),
+        }
+
+
+@tool
+async def http_request(
+    url: str,
+    method: str = "GET",
+    headers: Optional[Dict[str, str]] = None,
+    body: Optional[str] = None,
+    timeout: int = 30
+) -> Dict[str, Any]:
+    """
+    Make an HTTP request to an API endpoint.
+    
+    This tool allows making custom HTTP requests with different methods,
+    headers, and body content. Useful for API integration.
+    
+    Args:
+        url: URL to send the request to
+        method: HTTP method (GET, POST, PUT, DELETE, etc.)
+        headers: Optional HTTP headers
+        body: Optional request body for POST/PUT
+        timeout: Request timeout in seconds
+    
+    Returns:
+        Dictionary with:
+        - status: "success" or "error"
+        - status_code: HTTP status code
+        - headers: Response headers
+        - content: Response body
+        - error: Error message if any
+    """
+    try:
+        async with httpx.AsyncClient(timeout=float(timeout)) as client:
+            request_kwargs = {
+                "method": method.upper(),
+                "url": url,
+                "headers": headers or {},
+            }
+            
+            if body and method.upper() in ["POST", "PUT", "PATCH"]:
+                request_kwargs["content"] = body
+            
+            response = await client.request(**request_kwargs)
+            
+            # Try to get text content
+            try:
+                content = response.text
+            except Exception:
+                content = f"<binary content, {len(response.content)} bytes>"
+            
+            logger.info(f"HTTP {method} {url} -> {response.status_code}")
+            
+            return {
+                "status": "success",
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "content": content,
+                "url": str(response.url),
+            }
+            
+    except httpx.HTTPError as e:
+        logger.error(f"HTTP error: {e}")
+        return {
+            "status": "error",
+            "error": f"HTTP error: {str(e)}",
+            "url": url,
+        }
+    except Exception as e:
+        logger.error(f"Request error: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "url": url,
+        }
+
+
 # List of all available tools
 LANGSERVE_TOOLS = [
     execute_code,
     think,
     read_file,
     write_file,
+    web_search,
+    http_request,
 ]
 
 

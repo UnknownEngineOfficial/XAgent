@@ -5,12 +5,15 @@ import tempfile
 import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+import httpx
 
 from xagent.tools.langserve_tools import (
     execute_code,
     think,
     read_file,
     write_file,
+    web_search,
+    http_request,
     get_tool_by_name,
     get_all_tools,
 )
@@ -285,12 +288,14 @@ class TestToolDiscovery:
         """Test getting all tools."""
         tools = get_all_tools()
         
-        assert len(tools) == 4
+        assert len(tools) == 6
         tool_names = [tool.name for tool in tools]
         assert "execute_code" in tool_names
         assert "think" in tool_names
         assert "read_file" in tool_names
         assert "write_file" in tool_names
+        assert "web_search" in tool_names
+        assert "http_request" in tool_names
     
     def test_get_tool_by_name(self):
         """Test getting tool by name."""
@@ -371,4 +376,252 @@ class TestToolIntegration:
         })
         
         assert write_result["status"] == "success"
-        assert log_file.exists()
+
+
+class TestWebSearchTool:
+    """Integration tests for web_search tool."""
+    
+    @pytest.mark.asyncio
+    async def test_web_search_success_mock(self):
+        """Test successful web search with mocked response."""
+        mock_response = MagicMock()
+        mock_response.text = "<html><body><h1>Test Page</h1><p>Test content</p></body></html>"
+        mock_response.headers = {"content-type": "text/html"}
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            
+            result = await web_search.ainvoke({
+                "url": "https://example.com",
+                "extract_text": True,
+                "max_length": 10000
+            })
+            
+            assert result["status"] == "success"
+            assert result["url"] == "https://example.com"
+            assert "Test Page" in result["content"]
+            assert "Test content" in result["content"]
+            assert "<html>" not in result["content"]  # HTML tags removed
+    
+    @pytest.mark.asyncio
+    async def test_web_search_no_text_extraction(self):
+        """Test web search without text extraction."""
+        mock_response = MagicMock()
+        mock_response.text = "<html><body>Raw HTML</body></html>"
+        mock_response.headers = {"content-type": "text/html"}
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            
+            result = await web_search.ainvoke({
+                "url": "https://example.com",
+                "extract_text": False,
+                "max_length": 10000
+            })
+            
+            assert result["status"] == "success"
+            assert "<html>" in result["content"]  # HTML tags preserved
+    
+    @pytest.mark.asyncio
+    async def test_web_search_max_length_truncation(self):
+        """Test max length truncation."""
+        long_content = "A" * 20000
+        mock_response = MagicMock()
+        mock_response.text = long_content
+        mock_response.headers = {"content-type": "text/plain"}
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            
+            result = await web_search.ainvoke({
+                "url": "https://example.com",
+                "extract_text": False,
+                "max_length": 1000
+            })
+            
+            assert result["status"] == "success"
+            assert len(result["content"]) <= 1003  # 1000 + "..."
+            assert result["content"].endswith("...")
+    
+    @pytest.mark.asyncio
+    async def test_web_search_http_error(self):
+        """Test web search with HTTP error."""
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                side_effect=httpx.HTTPStatusError(
+                    "404 Not Found",
+                    request=MagicMock(),
+                    response=MagicMock(status_code=404)
+                )
+            )
+            
+            result = await web_search.ainvoke({
+                "url": "https://example.com/notfound",
+                "extract_text": True,
+                "max_length": 10000
+            })
+            
+            assert result["status"] == "error"
+            assert "error" in result
+    
+    @pytest.mark.asyncio
+    async def test_web_search_timeout(self):
+        """Test web search with timeout."""
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                side_effect=httpx.TimeoutException("Request timed out")
+            )
+            
+            result = await web_search.ainvoke({
+                "url": "https://slow-site.com",
+                "extract_text": True,
+                "max_length": 10000
+            })
+            
+            assert result["status"] == "error"
+            assert "timeout" in result["error"].lower() or "timed out" in result["error"].lower()
+
+
+class TestHTTPRequestTool:
+    """Integration tests for http_request tool."""
+    
+    @pytest.mark.asyncio
+    async def test_http_get_request(self):
+        """Test HTTP GET request."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "application/json"}
+        mock_response.text = '{"message": "success"}'
+        mock_response.url = "https://api.example.com/data"
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(return_value=mock_response)
+            
+            result = await http_request.ainvoke({
+                "url": "https://api.example.com/data",
+                "method": "GET",
+                "headers": None,
+                "body": None,
+                "timeout": 30
+            })
+            
+            assert result["status"] == "success"
+            assert result["status_code"] == 200
+            assert result["content"] == '{"message": "success"}'
+    
+    @pytest.mark.asyncio
+    async def test_http_post_request_with_body(self):
+        """Test HTTP POST request with body."""
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.headers = {"content-type": "application/json"}
+        mock_response.text = '{"id": 123}'
+        mock_response.url = "https://api.example.com/create"
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(return_value=mock_response)
+            
+            result = await http_request.ainvoke({
+                "url": "https://api.example.com/create",
+                "method": "POST",
+                "headers": {"Content-Type": "application/json"},
+                "body": '{"name": "test"}',
+                "timeout": 30
+            })
+            
+            assert result["status"] == "success"
+            assert result["status_code"] == 201
+    
+    @pytest.mark.asyncio
+    async def test_http_request_with_custom_headers(self):
+        """Test HTTP request with custom headers."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"x-custom": "value"}
+        mock_response.text = "OK"
+        mock_response.url = "https://api.example.com"
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(return_value=mock_response)
+            
+            result = await http_request.ainvoke({
+                "url": "https://api.example.com",
+                "method": "GET",
+                "headers": {"Authorization": "Bearer token123"},
+                "body": None,
+                "timeout": 30
+            })
+            
+            assert result["status"] == "success"
+            assert "x-custom" in result["headers"]
+    
+    @pytest.mark.asyncio
+    async def test_http_request_error(self):
+        """Test HTTP request with error."""
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(
+                side_effect=httpx.ConnectError("Connection failed")
+            )
+            
+            result = await http_request.ainvoke({
+                "url": "https://invalid-host.com",
+                "method": "GET",
+                "headers": None,
+                "body": None,
+                "timeout": 30
+            })
+            
+            assert result["status"] == "error"
+            assert "error" in result
+    
+    @pytest.mark.asyncio
+    async def test_http_put_request(self):
+        """Test HTTP PUT request."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.text = "Updated"
+        mock_response.url = "https://api.example.com/update/1"
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(return_value=mock_response)
+            
+            result = await http_request.ainvoke({
+                "url": "https://api.example.com/update/1",
+                "method": "PUT",
+                "headers": {"Content-Type": "application/json"},
+                "body": '{"status": "active"}',
+                "timeout": 30
+            })
+            
+            assert result["status"] == "success"
+            assert result["status_code"] == 200
+    
+    @pytest.mark.asyncio
+    async def test_http_delete_request(self):
+        """Test HTTP DELETE request."""
+        mock_response = MagicMock()
+        mock_response.status_code = 204
+        mock_response.headers = {}
+        mock_response.text = ""
+        mock_response.url = "https://api.example.com/delete/1"
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(return_value=mock_response)
+            
+            result = await http_request.ainvoke({
+                "url": "https://api.example.com/delete/1",
+                "method": "DELETE",
+                "headers": None,
+                "body": None,
+                "timeout": 30
+            })
+            
+            assert result["status"] == "success"
+            assert result["status_code"] == 204
