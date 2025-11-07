@@ -176,6 +176,8 @@ docker-compose up -d
 # - REST API: http://localhost:8000
 # - WebSocket: ws://localhost:8001
 # - Prometheus: http://localhost:9090
+# - Grafana: http://localhost:3000 (admin/admin)
+# - Jaeger UI: http://localhost:16686
 ```
 
 #### Manual Installation
@@ -357,8 +359,10 @@ Detaillierte Dokumentation verfügbar:
 - **[FEATURES.md](docs/FEATURES.md)**: Vollständige Feature-Dokumentation und Status
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Vollständige Architektur-Dokumentation
 - **[QUICKSTART.md](docs/QUICKSTART.md)**: Schnellstart-Anleitung mit Beispielen
+- **[OBSERVABILITY.md](docs/OBSERVABILITY.md)**: 🆕 Monitoring, Metrics & Tracing Guide
 - **[INTEGRATION_ROADMAP.md](docs/INTEGRATION_ROADMAP.md)**: 🆕 Open-Source Integrations-Roadmap
 - **[INTEGRATION_QUICK_REF.md](docs/INTEGRATION_QUICK_REF.md)**: 🆕 Schnellreferenz für Entwickler
+- **[PHASE_2_SUMMARY.md](docs/PHASE_2_SUMMARY.md)**: 🆕 Phase 2 Implementation Summary
 - **API Docs**: http://localhost:8000/docs (nach Start)
 
 ### Open-Source Integration Strategy 🚀
@@ -381,7 +385,7 @@ X-Agent nutzt bewährte Open-Source-Komponenten statt alles von Grund auf zu ent
 | Memory | Redis, PostgreSQL, ChromaDB |
 | Messaging | WebSocket, Celery (optional) |
 | Agents/Planning | LangChain, LangGraph ready |
-| Monitoring | Prometheus, structlog |
+| Monitoring | Prometheus, Grafana, Jaeger, OpenTelemetry |
 | Auth & Policies | JWT, YAML Policy Layer |
 | Containerisierung | Docker, Docker Compose |
 

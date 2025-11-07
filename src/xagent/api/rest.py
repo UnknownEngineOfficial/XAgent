@@ -2,8 +2,11 @@
 
 from typing import Any, Dict, Optional
 from datetime import datetime, timedelta
+import time
+import uuid
+import os
 
-from fastapi import FastAPI, HTTPException, Depends, Security, Response
+from fastapi import FastAPI, HTTPException, Depends, Security, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -24,11 +27,20 @@ from xagent.security.auth import (
     get_auth_manager,
 )
 from xagent.monitoring.metrics import get_metrics_collector
+from xagent.monitoring.tracing import setup_tracing, instrument_fastapi
 
 logger = get_logger(__name__)
 
 # Configure logging
 configure_logging()
+
+# Initialize tracing using configuration
+setup_tracing(
+    service_name="x-agent-api",
+    otlp_endpoint=settings.otlp_endpoint or None,
+    enable_console=settings.tracing_console,
+    insecure=settings.tracing_insecure,
+)
 
 # Create FastAPI app
 app = FastAPI(
@@ -45,6 +57,46 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Instrument FastAPI with OpenTelemetry
+instrument_fastapi(app)
+
+
+# Metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Middleware to track API metrics."""
+    metrics_collector = get_metrics_collector()
+    
+    # Generate request ID
+    request_id = str(uuid.uuid4())
+    
+    # Start timing
+    metrics_collector.start_api_request(request_id)
+    
+    # Process request
+    try:
+        response = await call_next(request)
+        
+        # Record metrics
+        metrics_collector.record_api_request(
+            request_id=request_id,
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code,
+        )
+        
+        return response
+        
+    except Exception as e:
+        # Record error
+        metrics_collector.record_api_error(
+            method=request.method,
+            endpoint=request.url.path,
+            error_type=type(e).__name__,
+        )
+        raise
+
 
 # Global agent instance
 agent: Optional[XAgent] = None
