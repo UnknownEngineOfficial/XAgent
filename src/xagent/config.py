@@ -1,19 +1,31 @@
 """Configuration management for X-Agent."""
 
 from typing import Optional
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+try:
+    from pydantic import Field
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+    PYDANTIC_V2 = True
+except ImportError:
+    from pydantic import BaseSettings, Field
+    PYDANTIC_V2 = False
 
 
 class Settings(BaseSettings):
     """Application settings."""
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore",
-    )
+    
+    if not PYDANTIC_V2:
+        class Config:
+            env_file = ".env"
+            env_file_encoding = "utf-8"
+            case_sensitive = False
+            extra = "ignore"
+    else:
+        model_config = SettingsConfigDict(
+            env_file=".env",
+            env_file_encoding="utf-8",
+            case_sensitive=False,
+            extra="ignore",
+        )
 
     # API Keys
     openai_api_key: str = Field(default="", description="OpenAI API key")

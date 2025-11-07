@@ -5,18 +5,22 @@
 help:
 	@echo "X-Agent Development Commands"
 	@echo "============================"
-	@echo "make install      - Install production dependencies"
-	@echo "make install-dev  - Install development dependencies"
-	@echo "make test         - Run tests"
-	@echo "make lint         - Run linters"
-	@echo "make format       - Format code"
-	@echo "make clean        - Clean build artifacts"
-	@echo "make docker-build - Build Docker images"
-	@echo "make docker-up    - Start Docker services"
-	@echo "make docker-down  - Stop Docker services"
-	@echo "make run-api      - Run REST API"
-	@echo "make run-ws       - Run WebSocket Gateway"
-	@echo "make run-cli      - Run CLI interface"
+	@echo "make install          - Install production dependencies"
+	@echo "make install-dev      - Install development dependencies"
+	@echo "make test             - Run all tests"
+	@echo "make test-cov         - Run tests with coverage report"
+	@echo "make test-cov-report  - Run tests with coverage (90% threshold)"
+	@echo "make test-unit        - Run unit tests only"
+	@echo "make test-integration - Run integration tests only"
+	@echo "make lint             - Run linters"
+	@echo "make format           - Format code"
+	@echo "make clean            - Clean build artifacts"
+	@echo "make docker-build     - Build Docker images"
+	@echo "make docker-up        - Start Docker services"
+	@echo "make docker-down      - Stop Docker services"
+	@echo "make run-api          - Run REST API"
+	@echo "make run-ws           - Run WebSocket Gateway"
+	@echo "make run-cli          - Run CLI interface"
 
 install:
 	pip install -r requirements.txt
@@ -28,7 +32,16 @@ test:
 	PYTHONPATH=src pytest tests/ -v
 
 test-cov:
-	PYTHONPATH=src pytest tests/ -v --cov=src --cov-report=html --cov-report=term
+	PYTHONPATH=src pytest tests/ -v --cov=src/xagent --cov-report=html --cov-report=term --cov-report=xml
+
+test-cov-report:
+	PYTHONPATH=src pytest tests/ -v --cov=src/xagent --cov-report=html --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+
+test-unit:
+	PYTHONPATH=src pytest tests/unit/ -v -m unit
+
+test-integration:
+	PYTHONPATH=src pytest tests/integration/ -v -m integration
 
 lint:
 	ruff check src/
