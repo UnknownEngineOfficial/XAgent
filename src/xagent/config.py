@@ -89,7 +89,13 @@ class Settings(BaseSettings):
     @property
     def postgres_url(self) -> str:
         """Get PostgreSQL connection URL."""
-        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        from urllib.parse import urlunparse
+        return urlunparse((
+            'postgresql',
+            f'{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}',
+            f'/{self.postgres_db}',
+            '', '', ''
+        ))
 
 
 # Global settings instance

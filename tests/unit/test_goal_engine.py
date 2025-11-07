@@ -1,11 +1,5 @@
 """Tests for goal engine."""
 
-import sys
-import os
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
-
 import pytest
 from xagent.core.goal_engine import GoalEngine, GoalMode, GoalStatus
 

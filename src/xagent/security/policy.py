@@ -43,16 +43,20 @@ class PolicyRule:
             
         Returns:
             True if rule applies, False otherwise
+            
+        Note:
+            This is a simplified implementation for demonstration.
+            Production systems should use proper expression parsing or rule engines.
         """
         if not self.condition:
             return True
             
-        # Simple condition evaluation (would be more sophisticated in production)
-        # For now, just check if context matches condition keywords
-        return any(
-            keyword in str(context).lower()
-            for keyword in self.condition.lower().split()
-        )
+        # Simple keyword matching for demonstration
+        # TODO: Implement proper rule engine for production
+        context_str = str(context).lower()
+        condition_keywords = self.condition.lower().split()
+        
+        return any(keyword in context_str for keyword in condition_keywords)
 
 
 class PolicyLayer:

@@ -150,9 +150,21 @@ class MediumTermMemory(MemoryStore):
     async def connect(self) -> None:
         """Connect to PostgreSQL."""
         try:
-            # Use async engine
-            db_url = settings.postgres_url.replace("postgresql://", "postgresql+asyncpg://")
-            self.engine = create_async_engine(db_url, echo=False)
+            # Use async engine with proper URL parsing
+            from urllib.parse import urlparse, urlunparse
+            
+            parsed = urlparse(self.engine.config.postgres_url if hasattr(self, 'engine') and hasattr(self.engine, 'config') else settings.postgres_url)
+            # Replace scheme for asyncpg
+            async_url = urlunparse((
+                'postgresql+asyncpg',
+                parsed.netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment
+            ))
+            
+            self.engine = create_async_engine(async_url, echo=False)
             self.session_maker = async_sessionmaker(
                 self.engine, class_=AsyncSession, expire_on_commit=False
             )

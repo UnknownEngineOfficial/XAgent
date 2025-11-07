@@ -28,7 +28,7 @@ class GoalStatus(str, Enum):
 class Goal:
     """Represents a goal or task."""
     
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = field(default_factory=lambda: f"goal_{str(uuid.uuid4())}")
     description: str = ""
     mode: GoalMode = GoalMode.GOAL_ORIENTED
     status: GoalStatus = GoalStatus.PENDING

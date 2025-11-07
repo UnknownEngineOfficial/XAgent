@@ -33,7 +33,7 @@ app.add_middleware(
 )
 
 # Global agent instance and active connections
-agent: XAgent = None
+agent: Optional[XAgent] = None
 active_connections: Set[WebSocket] = set()
 
 

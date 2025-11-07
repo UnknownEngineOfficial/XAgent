@@ -65,7 +65,7 @@ class CognitiveLoop:
         self.current_phase = LoopPhase.PERCEPTION
         self.running = False
         self.iteration_count = 0
-        self.max_iterations = 1000
+        self.max_iterations = 1000  # TODO: Make configurable via settings
         
         # Perception queue for inputs
         self.perception_queue: asyncio.Queue = asyncio.Queue()
