@@ -47,6 +47,12 @@ jobs:
       env:
         PYTHONPATH: src
     
+    - name: Run integration tests
+      run: |
+        PYTHONPATH=src pytest tests/integration/ -v --tb=short
+      env:
+        PYTHONPATH: src
+    
     - name: Upload coverage to artifact
       if: matrix.python-version == '3.12'
       uses: actions/upload-artifact@v4
