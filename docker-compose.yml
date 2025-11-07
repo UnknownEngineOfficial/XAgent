@@ -86,6 +86,7 @@ services:
       - POSTGRES_USER=xagent
       - POSTGRES_PASSWORD=xagent_password
       - CHROMA_PERSIST_DIRECTORY=/app/data/chroma
+      - OTLP_ENDPOINT=http://jaeger:4317
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -139,7 +140,37 @@ services:
       - '--storage.tsdb.path=/prometheus'
     restart: unless-stopped
 
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: xagent-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/etc/grafana/dashboards
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: xagent-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC receiver
+      - "4318:4318"    # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+
 volumes:
   redis_data:
   postgres_data:
   prometheus_data:
+  grafana_data:
