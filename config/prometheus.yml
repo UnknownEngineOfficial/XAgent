@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'xagent-api'
+    static_configs:
+      - targets: ['xagent-api:8000']
+  
+  - job_name: 'xagent-websocket'
+    static_configs:
+      - targets: ['xagent-websocket:8001']

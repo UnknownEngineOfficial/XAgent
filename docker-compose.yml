@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # Redis for short-term memory
+  redis:
+    image: redis:7-alpine
+    container_name: xagent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # PostgreSQL for medium-term memory
+  postgres:
+    image: postgres:15-alpine
+    container_name: xagent-postgres
+    environment:
+      POSTGRES_DB: xagent
+      POSTGRES_USER: xagent
+      POSTGRES_PASSWORD: xagent_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # X-Agent Core
+  xagent-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xagent-core
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=xagent
+      - POSTGRES_USER=xagent
+      - POSTGRES_PASSWORD=xagent_password
+      - CHROMA_PERSIST_DIRECTORY=/app/data/chroma
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # X-Agent REST API
+  xagent-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xagent-api
+    command: uvicorn xagent.api.rest:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=xagent
+      - POSTGRES_USER=xagent
+      - POSTGRES_PASSWORD=xagent_password
+      - CHROMA_PERSIST_DIRECTORY=/app/data/chroma
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # X-Agent WebSocket Gateway
+  xagent-websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xagent-websocket
+    command: uvicorn xagent.api.websocket:app --host 0.0.0.0 --port 8001
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=xagent
+      - POSTGRES_USER=xagent
+      - POSTGRES_PASSWORD=xagent_password
+      - CHROMA_PERSIST_DIRECTORY=/app/data/chroma
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: xagent-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
+  prometheus_data:
