@@ -11,6 +11,7 @@ from xagent.core.agent import XAgent
 from xagent.core.goal_engine import GoalMode
 from xagent.config import settings
 from xagent.utils.logging import get_logger, configure_logging
+from xagent.health import HealthCheck
 
 logger = get_logger(__name__)
 
@@ -35,6 +36,9 @@ app.add_middleware(
 
 # Global agent instance
 agent: Optional[XAgent] = None
+
+# Global health checker instance
+health_checker = HealthCheck()
 
 
 # Request/Response models
@@ -205,9 +209,45 @@ async def get_goal(goal_id: str) -> Dict[str, Any]:
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-    }
+async def health_check() -> Dict[str, Any]:
+    """
+    Comprehensive health check endpoint.
+    
+    Returns detailed health status including all dependency checks.
+    Returns 200 if healthy, 503 if unhealthy.
+    """
+    health_status = health_checker.get_health()
+    status_code = 200 if health_status["status"] == "healthy" else 503
+    
+    # FastAPI doesn't allow direct status code setting in return,
+    # so we use Response for custom status codes
+    from fastapi import Response
+    from fastapi.responses import JSONResponse
+    
+    return JSONResponse(content=health_status, status_code=status_code)
+
+
+@app.get("/healthz")
+async def liveness_check() -> Dict[str, Any]:
+    """
+    Liveness probe endpoint.
+    
+    Indicates if the service is alive and running.
+    Always returns 200 if the service is responsive.
+    """
+    return health_checker.get_liveness()
+
+
+@app.get("/ready")
+async def readiness_check() -> Dict[str, Any]:
+    """
+    Readiness probe endpoint.
+    
+    Indicates if the service is ready to accept traffic.
+    Returns 200 if ready, 503 if not ready.
+    """
+    readiness_status = health_checker.get_readiness()
+    status_code = 200 if readiness_status["ready"] else 503
+    
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=readiness_status, status_code=status_code)
