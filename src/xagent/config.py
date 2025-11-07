@@ -123,6 +123,16 @@ class Settings(BaseSettings):
     def SECRET_KEY(self) -> str:
         """Alias for secret_key (backward compatibility)."""
         return self.secret_key
+    
+    @property
+    def CELERY_BROKER_URL(self) -> str:
+        """Alias for celery_broker_url (Celery expects uppercase)."""
+        return self.celery_broker_url
+    
+    @property
+    def CELERY_RESULT_BACKEND(self) -> str:
+        """Alias for celery_result_backend (Celery expects uppercase)."""
+        return self.celery_result_backend
 
 
 # Global settings instance
