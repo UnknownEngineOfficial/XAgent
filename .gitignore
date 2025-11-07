@@ -21,6 +21,7 @@ wheels/
 *.egg
 MANIFEST
 venv/
+.venv/
 env/
 ENV/
 
@@ -50,6 +51,7 @@ logs/
 # Coverage
 .coverage
 .coverage.*
+coverage.xml
 htmlcov/
 .pytest_cache/
 .tox/
