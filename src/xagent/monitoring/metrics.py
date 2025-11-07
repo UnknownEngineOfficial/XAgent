@@ -275,7 +275,25 @@ class MetricsCollector:
     def __init__(self):
         """Initialize metrics collector."""
         self.start_times: Dict[str, float] = {}
+        self._max_start_times = 1000  # Limit to prevent memory leaks
         logger.info("Metrics collector initialized")
+    
+    def _cleanup_old_start_times(self):
+        """Remove old start times to prevent memory leaks."""
+        if len(self.start_times) > self._max_start_times:
+            # Remove oldest 20% of entries
+            import time
+            current_time = time.time()
+            cutoff_time = current_time - 3600  # 1 hour ago
+            
+            self.start_times = {
+                key: value
+                for key, value in self.start_times.items()
+                if value > cutoff_time
+            }
+            logger.warning(
+                f"Cleaned up orphaned timing entries. Remaining: {len(self.start_times)}"
+            )
     
     # Agent metrics
     
@@ -310,6 +328,7 @@ class MetricsCollector:
     
     def start_api_request(self, request_id: str):
         """Start timing an API request."""
+        self._cleanup_old_start_times()
         self.start_times[f"api_{request_id}"] = time.time()
     
     def record_api_request(
@@ -356,6 +375,7 @@ class MetricsCollector:
     
     def start_tool_execution(self, tool_name: str, execution_id: str):
         """Start timing tool execution."""
+        self._cleanup_old_start_times()
         self.start_times[f"tool_{execution_id}"] = time.time()
     
     def record_tool_execution(

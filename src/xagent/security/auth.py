@@ -178,11 +178,12 @@ class AuthManager:
         
         # Encode JWT
         header = {"alg": "HS256"}
-        token = jwt.encode(header, payload, self._secret_key)
+        token_bytes = jwt.encode(header, payload, self._secret_key)
+        token = token_bytes.decode("utf-8") if isinstance(token_bytes, bytes) else token_bytes
         
         logger.info(f"Created access token for user: {username}, role: {role.value}")
         
-        return token.decode("utf-8") if isinstance(token, bytes) else token
+        return token
     
     def verify_token(self, token: str) -> TokenData:
         """
@@ -198,11 +199,12 @@ class AuthManager:
             HTTPException: If token is invalid or expired
         """
         try:
-            # Decode and validate token
-            # authlib automatically validates exp claim if present
+            # Decode token
             payload = jwt.decode(token, self._secret_key)
             
-            # Additional validation - check expiration manually
+            # Manual expiration validation
+            # Note: authlib jwt.decode does not automatically validate exp claim
+            # We must check it manually to ensure token hasn't expired
             exp = payload.get("exp")
             if exp:
                 now_timestamp = datetime.now(timezone.utc).timestamp()

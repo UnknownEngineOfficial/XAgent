@@ -23,7 +23,7 @@ from xagent.config import Settings
 @pytest.fixture
 def auth_manager():
     """Create auth manager for testing."""
-    settings = Settings(secret_key="test-secret-key-for-testing")
+    settings = Settings(secret_key="test-secret-32-characters-long!!")
     return AuthManager(settings)
 
 
