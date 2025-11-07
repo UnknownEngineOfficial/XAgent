@@ -52,7 +52,10 @@ echo "Running coverage analysis..."
 echo "================================================"
 echo ""
 
-# Run coverage without fail-under enforcement
+# Coverage threshold (can be overridden via environment variable)
+COVERAGE_THRESHOLD="${COVERAGE_THRESHOLD:-0}"
+
+# Run coverage with configurable threshold
 pytest tests/unit/ \
     --cov=src/xagent \
     --cov-report=term \
@@ -60,7 +63,7 @@ pytest tests/unit/ \
     --cov-report=html \
     --disable-warnings \
     -q \
-    --cov-fail-under=0
+    --cov-fail-under=${COVERAGE_THRESHOLD}
 
 # Check exit code
 TEST_EXIT_CODE=$?

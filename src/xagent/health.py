@@ -12,7 +12,12 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from enum import Enum
 
+from xagent.config import Settings
+
 logger = logging.getLogger(__name__)
+
+# Global settings instance
+_settings = Settings()
 
 
 class HealthStatus(str, Enum):
@@ -36,17 +41,15 @@ class HealthCheck:
         """Check Redis connectivity"""
         try:
             import redis
-            from xagent.config import Settings
             
-            settings = Settings()
-            if not settings.redis_host:
+            if not _settings.redis_host:
                 return True, "Redis not configured (optional)"
             
             client = redis.Redis(
-                host=settings.redis_host,
-                port=settings.redis_port,
-                db=settings.redis_db,
-                password=settings.redis_password if settings.redis_password else None,
+                host=_settings.redis_host,
+                port=_settings.redis_port,
+                db=_settings.redis_db,
+                password=_settings.redis_password if _settings.redis_password else None,
                 socket_connect_timeout=2,
                 socket_timeout=2
             )
@@ -61,13 +64,11 @@ class HealthCheck:
         """Check PostgreSQL connectivity"""
         try:
             import psycopg
-            from xagent.config import Settings
             
-            settings = Settings()
-            if not settings.postgres_host:
+            if not _settings.postgres_host:
                 return True, "PostgreSQL not configured (optional)"
             
-            conn_str = settings.postgres_url
+            conn_str = _settings.postgres_url
             with psycopg.connect(conn_str, connect_timeout=2) as conn:
                 with conn.cursor() as cur:
                     cur.execute("SELECT 1")
@@ -81,9 +82,7 @@ class HealthCheck:
         """Check ChromaDB connectivity"""
         try:
             import chromadb
-            from xagent.config import Settings
             
-            settings = Settings()
             # ChromaDB client initialization is lightweight
             client = chromadb.Client()
             return True, None
