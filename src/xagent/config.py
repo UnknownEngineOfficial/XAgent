@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     )
     jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
     jwt_expiration_minutes: int = Field(default=60, description="JWT expiration in minutes")
+    
+    # OPA (Open Policy Agent) Configuration
+    opa_url: str = Field(default="http://localhost:8181", description="OPA server URL")
+    opa_enabled: bool = Field(default=False, description="Enable OPA policy enforcement")
+    opa_timeout: int = Field(default=5, description="OPA request timeout in seconds")
 
     # Agent Configuration
     agent_name: str = Field(default="X-Agent", description="Agent name")

@@ -75,6 +75,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      opa:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
@@ -87,6 +89,8 @@ services:
       - POSTGRES_PASSWORD=xagent_password
       - CHROMA_PERSIST_DIRECTORY=/app/data/chroma
       - OTLP_ENDPOINT=http://jaeger:4317
+      - OPA_URL=http://opa:8181
+      - OPA_ENABLED=true
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -175,8 +179,64 @@ services:
     # - External storage backend (Elasticsearch/Cassandra)
     restart: unless-stopped
 
+  # OPA (Open Policy Agent) for policy enforcement
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: xagent-opa
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=info"
+      - "/policies"
+    volumes:
+      - ./config/policies:/policies
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: xagent-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Promtail for log collection
+  promtail:
+    image: grafana/promtail:latest
+    container_name: xagent-promtail
+    volumes:
+      - ./config/promtail-config.yml:/etc/promtail/config.yml
+      - ./logs:/var/log/xagent
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   redis_data:
   postgres_data:
   prometheus_data:
   grafana_data:
+  loki_data:

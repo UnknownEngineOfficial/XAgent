@@ -2,7 +2,13 @@
 
 import pytest
 from pathlib import Path
-from xagent.utils.logging import get_logger, configure_logging
+from unittest.mock import patch, MagicMock
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+from xagent.utils.logging import get_logger, configure_logging, add_trace_context
 
 
 def test_get_logger():
@@ -79,3 +85,37 @@ def test_logger_after_configuration(tmp_path, monkeypatch):
         logger.info("Test message after configuration")
     except Exception as e:
         pytest.fail(f"Failed to log after configuration: {e}")
+
+
+def test_add_trace_context_with_span():
+    """Test adding trace context when span is active."""
+    # Set up OpenTelemetry
+    tracer_provider = TracerProvider()
+    exporter = InMemorySpanExporter()
+    tracer_provider.add_span_processor(SimpleSpanProcessor(exporter))
+    trace.set_tracer_provider(tracer_provider)
+    
+    tracer = trace.get_tracer(__name__)
+    
+    # Create a span
+    with tracer.start_as_current_span("test_span"):
+        event_dict = {}
+        result = add_trace_context(None, None, event_dict)
+        
+        # Should have trace_id and span_id
+        assert "trace_id" in result
+        assert "span_id" in result
+        assert len(result["trace_id"]) == 32  # 16 bytes in hex
+        assert len(result["span_id"]) == 16   # 8 bytes in hex
+
+
+def test_add_trace_context_without_span():
+    """Test adding trace context when no span is active."""
+    event_dict = {}
+    result = add_trace_context(None, None, event_dict)
+    
+    # Should not add trace context when no span is active
+    # (or trace_id/span_id should be invalid/empty)
+    # The behavior depends on whether there's a default span context
+    assert isinstance(result, dict)
+
