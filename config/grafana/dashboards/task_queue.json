@@ -1,0 +1,362 @@
+{
+  "dashboard": {
+    "title": "X-Agent Task Queue Monitoring",
+    "tags": ["xagent", "tasks", "celery"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Task Execution Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(xagent_task_started_total[5m])",
+            "legendFormat": "{{task_name}} - Started",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(xagent_task_completed_total{status=\"success\"}[5m])",
+            "legendFormat": "{{task_name}} - Completed",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Tasks/sec"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true
+        }
+      },
+      {
+        "id": 2,
+        "title": "Task Success vs Failure Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(xagent_task_completed_total{status=\"success\"}[5m])",
+            "legendFormat": "Success - {{task_name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(xagent_task_failed_total[5m])",
+            "legendFormat": "Failed - {{task_name}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Tasks/sec"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "seriesOverrides": [
+          {
+            "alias": "/Failed.*/",
+            "color": "red"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true
+        }
+      },
+      {
+        "id": 3,
+        "title": "Task Execution Duration (p95)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(xagent_task_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{task_name}} - p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(xagent_task_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{task_name}} - p50",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true
+        }
+      },
+      {
+        "id": 4,
+        "title": "Queue Depth by Queue",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "xagent_task_queue_depth",
+            "legendFormat": "{{queue_name}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Tasks in Queue"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 2,
+        "linewidth": 2,
+        "stack": false,
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "Active Celery Workers",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "xagent_active_workers",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 1, "color": "yellow"},
+                {"value": 2, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Total Tasks Processed (24h)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(increase(xagent_task_completed_total[24h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Task Retry Rate",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(xagent_task_retry_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.1, "color": "yellow"},
+                {"value": 1.0, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Task Success Rate (%)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 16},
+        "targets": [
+          {
+            "expr": "100 * sum(rate(xagent_task_completed_total{status=\"success\"}[5m])) / sum(rate(xagent_task_completed_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 90, "color": "yellow"},
+                {"value": 99, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Task Execution Histogram",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(xagent_task_duration_seconds_bucket[5m])",
+            "legendFormat": "{{le}}",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "dataFormat": "tsbuckets",
+        "yAxis": {
+          "format": "s",
+          "decimals": 1
+        },
+        "legend": {
+          "show": true
+        }
+      },
+      {
+        "id": 10,
+        "title": "Task Types Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+        "targets": [
+          {
+            "expr": "sum by (task_name) (increase(xagent_task_started_total[1h]))",
+            "legendFormat": "{{task_name}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "percent"]
+        }
+      },
+      {
+        "id": 11,
+        "title": "Recent Task Failures (Last 1h)",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+        "targets": [
+          {
+            "expr": "topk(10, increase(xagent_task_failed_total[1h]))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [{"field": "Value", "desc": true}]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "left",
+              "displayMode": "auto"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Value"},
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "Failure Count"
+                },
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {"value": 0, "color": "green"},
+                      {"value": 5, "color": "yellow"},
+                      {"value": 10, "color": "red"}
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  }
+}
