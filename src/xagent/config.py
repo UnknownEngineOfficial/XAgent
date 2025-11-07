@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     )
     max_iterations: int = Field(default=100, description="Maximum iterations per task")
     loop_delay_seconds: float = Field(default=1.0, description="Delay between loop iterations")
+    
+    # Planning Configuration
+    use_langgraph_planner: bool = Field(
+        default=False, description="Use LangGraph-based planner instead of legacy planner"
+    )
 
     # Tool Configuration
     enable_code_tools: bool = Field(default=True, description="Enable code tools")

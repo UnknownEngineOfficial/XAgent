@@ -6,9 +6,11 @@ import asyncio
 from xagent.core.goal_engine import GoalEngine, GoalMode
 from xagent.core.cognitive_loop import CognitiveLoop
 from xagent.core.planner import Planner
+from xagent.planning.langgraph_planner import LangGraphPlanner
 from xagent.core.executor import Executor
 from xagent.core.metacognition import MetaCognitionMonitor
 from xagent.memory.memory_layer import MemoryLayer
+from xagent.config import Settings
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -22,14 +24,30 @@ class XAgent:
     until explicitly stopped or goal is achieved.
     """
     
-    def __init__(self) -> None:
-        """Initialize X-Agent."""
+    def __init__(self, settings: Optional[Settings] = None) -> None:
+        """
+        Initialize X-Agent.
+        
+        Args:
+            settings: Optional settings instance. If not provided, loads from environment.
+        """
         logger.info("Initializing X-Agent...")
+        
+        # Load settings
+        self.settings = settings or Settings()
         
         # Initialize core components
         self.goal_engine = GoalEngine()
         self.memory = MemoryLayer()
-        self.planner = Planner()
+        
+        # Choose planner based on configuration
+        if self.settings.use_langgraph_planner:
+            logger.info("Using LangGraph planner")
+            self.planner = LangGraphPlanner()
+        else:
+            logger.info("Using legacy planner")
+            self.planner = Planner()
+        
         self.executor = Executor()
         self.metacognition = MetaCognitionMonitor()
         
@@ -146,6 +164,7 @@ class XAgent:
             "running": self.cognitive_loop.running if self.cognitive_loop else False,
             "state": self.cognitive_loop.state.value if self.cognitive_loop else "unknown",
             "iteration_count": self.cognitive_loop.iteration_count if self.cognitive_loop else 0,
+            "planner_type": "langgraph" if self.settings.use_langgraph_planner else "legacy",
             "active_goal": None,
             "goals_summary": {
                 "total": len(self.goal_engine.goals),
