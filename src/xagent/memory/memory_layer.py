@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import asyncio
 
@@ -194,7 +194,7 @@ class MediumTermMemory(MemoryStore):
             async with self.session_maker() as session:
                 expires_at = None
                 if ttl:
-                    expires_at = datetime.utcnow() + timedelta(seconds=ttl)
+                    expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl)
                 
                 entry = MemoryEntry(
                     id=key,
@@ -218,7 +218,7 @@ class MediumTermMemory(MemoryStore):
         try:
             async with self.session_maker() as session:
                 result = await session.get(MemoryEntry, key)
-                if result and (not result.expires_at or result.expires_at > datetime.utcnow()):
+                if result and (not result.expires_at or result.expires_at > datetime.now(timezone.utc)):
                     try:
                         return json.loads(result.content)
                     except json.JSONDecodeError:
@@ -303,7 +303,7 @@ class LongTermMemory(MemoryStore):
                 ids=[key],
                 documents=[content],
                 embeddings=[embedding] if embedding else None,
-                metadatas=[{"created_at": datetime.utcnow().isoformat()}],
+                metadatas=[{"created_at": datetime.now(timezone.utc).isoformat()}],
             )
             
             logger.debug(f"Saved to long-term memory: {key}")

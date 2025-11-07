@@ -1,7 +1,7 @@
 """Planner - Strategic planning for X-Agent."""
 
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from xagent.utils.logging import get_logger
@@ -119,7 +119,7 @@ Provide your response as a JSON object with the following structure:
                 "goal_description": active_goal.get("description"),
             },
             "reasoning": "Analyzing current goal to determine next steps",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
         return plan

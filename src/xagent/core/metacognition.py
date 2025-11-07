@@ -1,7 +1,7 @@
 """Meta-Cognition Monitor - Self-monitoring and evaluation."""
 
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import deque
 
 from xagent.utils.logging import get_logger
@@ -39,7 +39,7 @@ class MetaCognitionMonitor:
             Evaluation metrics
         """
         evaluation = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "success_rate": 0.0,
             "efficiency": 0.0,
             "issues_detected": [],
@@ -48,7 +48,7 @@ class MetaCognitionMonitor:
         
         # Add to performance history
         self.performance_history.append({
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "success": result.get("success", False),
             "action_type": result.get("plan", {}).get("type"),
         })
@@ -79,12 +79,12 @@ class MetaCognitionMonitor:
             if action_type not in self.loop_detection:
                 self.loop_detection[action_type] = []
             
-            self.loop_detection[action_type].append(datetime.utcnow())
+            self.loop_detection[action_type].append(datetime.now(timezone.utc))
             
             # Check if same action repeated too frequently
             recent_actions = [
                 t for t in self.loop_detection[action_type]
-                if t > datetime.utcnow() - timedelta(minutes=5)
+                if t > datetime.now(timezone.utc) - timedelta(minutes=5)
             ]
             
             if len(recent_actions) > 10:

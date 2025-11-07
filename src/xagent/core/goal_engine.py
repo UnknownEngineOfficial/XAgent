@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -36,8 +36,8 @@ class Goal:
     parent_id: Optional[str] = None
     sub_goals: List[str] = field(default_factory=list)
     completion_criteria: List[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     
@@ -121,10 +121,10 @@ class GoalEngine:
         """Update goal status."""
         if goal_id in self.goals:
             self.goals[goal_id].status = status
-            self.goals[goal_id].updated_at = datetime.utcnow()
+            self.goals[goal_id].updated_at = datetime.now(timezone.utc)
             
             if status == GoalStatus.COMPLETED:
-                self.goals[goal_id].completed_at = datetime.utcnow()
+                self.goals[goal_id].completed_at = datetime.now(timezone.utc)
     
     def set_active_goal(self, goal_id: str) -> None:
         """Set the active goal."""
