@@ -164,17 +164,20 @@ Build an autonomous, self-thinking AI agent capable of:
 - ⚠️ Migration to LangServe in progress
 - ⚠️ No tool discovery yet
 
-#### LangServe Tools (`src/xagent/tools/langserve_tools.py`) ✅ NEW
+#### LangServe Tools (`src/xagent/tools/langserve_tools.py`) ✅ COMPLETE
 - ✅ LangChain @tool decorator integration
-- ✅ Pydantic input validation schemas
+- ✅ Pydantic v2 input validation schemas
 - ✅ Docker sandbox integration for code execution
-- ✅ Four production-ready tools implemented:
+- ✅ **Six production-ready tools implemented:**
   - `execute_code`: Sandboxed code execution (Python, JS, TS, Bash, Go)
   - `think`: Record agent reasoning and thoughts
   - `read_file`: Safe file reading with workspace restrictions
   - `write_file`: Safe file writing with workspace restrictions
+  - `web_search`: Fetch and extract content from web pages (NEW)
+  - `http_request`: Make HTTP API requests (GET, POST, PUT, DELETE) (NEW)
+- ✅ **40 integration tests (all passing)**
 
-#### Docker Sandbox (`src/xagent/sandbox/docker_sandbox.py`) ✅ NEW
+#### Docker Sandbox (`src/xagent/sandbox/docker_sandbox.py`) ✅ COMPLETE
 - ✅ Secure code execution in isolated containers
 - ✅ Resource limits (CPU: 50%, Memory: 128m default)
 - ✅ Network isolation (disabled by default)
@@ -186,10 +189,8 @@ Build an autonomous, self-thinking AI agent capable of:
 - ✅ **10 unit tests (all passing)**
 
 #### Needed Tools (Remaining)
-- ⚠️ Web scraping/HTTP requests
 - ⚠️ Database queries
-- ⚠️ External API integrations
-- ⚠️ Integration tests for tools
+- ⚠️ Advanced API integrations (OAuth, etc.)
 
 ---
 
@@ -326,7 +327,7 @@ Build an autonomous, self-thinking AI agent capable of:
 - ✅ pytest configured (`pyproject.toml`)
 - ✅ pytest-asyncio for async tests
 - ✅ Coverage reporting (pytest-cov)
-- ✅ **181 total tests (143 unit + 38 integration)**
+- ✅ **221 total tests (143 unit + 78 integration)** ⬆️
 - ✅ Test script (`scripts/run_tests.py`, `scripts/test.sh`)
 - ✅ Makefile targets for testing
 - ✅ **GitHub Actions CI/CD pipeline**
@@ -344,14 +345,15 @@ Build an autonomous, self-thinking AI agent capable of:
 - ✅ `logging.py`: 8 tests (logging with trace context)
 - ✅ Others: 18 tests
 
-**Integration Tests (38):**
+**Integration Tests (78):** ⬆️
+- ✅ `test_langserve_tools.py`: 40 tests (LangServe tools) **NEW**
 - ✅ `test_api_rest.py`: 19 tests (REST API endpoints)
 - ✅ `test_api_health.py`: 12 tests (health endpoints)
 - ✅ `test_api_auth.py`: 7 tests (authentication endpoints)
 
 #### Completed ✅
 - ✅ **CI/CD**: GitHub Actions running tests, linters, coverage
-- ✅ **Integration Tests**: 31 tests for REST API
+- ✅ **Integration Tests**: 78 tests total (40 new for tools) ⬆️
 - ✅ **Automated Testing**: Runs on every PR and push
 
 #### Still Missing
@@ -546,15 +548,16 @@ This document should be updated whenever significant features are implemented or
 | 2025-11-07 | Phase 2 observability complete: Metrics, Tracing, Grafana dashboards | Copilot |
 | 2025-11-07 | Phase 2 complete: OPA integration, Loki/Promtail logging stack | Copilot |
 | 2025-11-07 | Phase 3 started: LangServe tools + Docker sandbox implemented | Copilot |
+| 2025-11-07 | Phase 3 tools completed: Web search & HTTP request tools + 40 integration tests | Copilot |
 
 ### Progress Metrics
 
 - **Total Features**: 50+
-- **Completed**: ~46 (92%) ⬆️
-- **In Progress**: ~3 (6%) ⬇️
+- **Completed**: ~48 (96%) ⬆️
+- **In Progress**: ~1 (2%) ⬇️
 - **Planned/Not Started**: ~1 (2%) ⬇️
 - **Test Coverage**: 90% target (core modules)
-- **Test Count**: 191 tests (147 unit + 38 integration) ⬆️
+- **Test Count**: 221 tests (143 unit + 78 integration) ⬆️
 - **P0 Critical Items**: 4/4 complete (100%) ✅
   - Health checks ✅
   - CI/CD ✅
@@ -571,7 +574,7 @@ This document should be updated whenever significant features are implemented or
   - Metrics middleware ✅
   - Documentation (OBSERVABILITY.md) ✅
   - Jaeger integration ✅
-- **Phase 3 (Task & Tool Management)**: 7/12 complete (58%) 🟡
+- **Phase 3 (Task & Tool Management)**: 9/12 complete (75%) 🟡 ⬆️
   - LangServe integration ✅
   - Docker sandbox implementation ✅
   - Sandboxed code execution ✅
@@ -579,8 +582,9 @@ This document should be updated whenever significant features are implemented or
   - Execute code tool ✅
   - File operations tools ✅
   - Think tool ✅
-  - Integration tests for tools ⚠️
-  - Web search tool ⚠️
+  - Integration tests for tools ✅ **NEW**
+  - Web search tool ✅ **NEW**
+  - HTTP request tool ✅ **NEW**
   - Task queue (Arq/Celery) ⚠️
   - Worker configuration ⚠️
   - Task monitoring ⚠️
