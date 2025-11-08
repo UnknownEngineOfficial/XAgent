@@ -54,11 +54,11 @@ def create_feature_table():
         show_header=True,
         header_style="bold magenta",
     )
-    
+
     table.add_column("Category", style="cyan", width=25)
     table.add_column("Features", style="white", width=50)
     table.add_column("Status", justify="center", width=10)
-    
+
     features = [
         ("Core Agent", "Cognitive Loop, Goal Engine, Executor", "✅"),
         ("Planning", "Dual Planners (Legacy + LangGraph)", "✅"),
@@ -70,17 +70,17 @@ def create_feature_table():
         ("Testing", "450 Tests (184 Unit + 266 Integration)", "✅"),
         ("Documentation", "87KB Comprehensive Guides", "✅"),
     ]
-    
+
     for category, features_text, status in features:
         table.add_row(category, features_text, status)
-    
+
     return table
 
 
 async def demo_goal_management():
     """Demonstrate hierarchical goal management."""
     console.print("\n[bold yellow]═══ 1. Goal Management System ═══[/bold yellow]\n")
-    
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -89,12 +89,12 @@ async def demo_goal_management():
         console=console,
     ) as progress:
         task = progress.add_task("[cyan]Initializing Goal Engine...", total=4)
-        
+
         # Initialize
         engine = GoalEngine()
         await asyncio.sleep(0.5)
         progress.update(task, advance=1, description="[green]✓[/green] Goal Engine initialized")
-        
+
         # Create main goal
         main_goal = await engine.create_goal(
             description="Deploy X-Agent to production",
@@ -110,7 +110,7 @@ async def demo_goal_management():
         )
         await asyncio.sleep(0.3)
         progress.update(task, advance=1, description="[green]✓[/green] Main goal created")
-        
+
         # Create sub-goals
         sub_goals = [
             ("Run comprehensive test suite", 9),
@@ -119,7 +119,7 @@ async def demo_goal_management():
             ("Configure Grafana dashboards", 8),
             ("Execute load tests", 7),
         ]
-        
+
         for desc, priority in sub_goals:
             await engine.create_goal(
                 description=desc,
@@ -128,9 +128,9 @@ async def demo_goal_management():
                 priority=priority,
             )
             await asyncio.sleep(0.2)
-        
+
         progress.update(task, advance=1, description="[green]✓[/green] Sub-goals created")
-        
+
         # Simulate progress
         goals = await engine.list_goals()
         if len(goals) > 1:
@@ -138,26 +138,26 @@ async def demo_goal_management():
             await engine.update_goal(goals[2].id, status="in_progress")
         await asyncio.sleep(0.3)
         progress.update(task, advance=1, description="[green]✓[/green] Progress simulated")
-    
+
     # Display goal hierarchy
     goals = await engine.list_goals()
-    
+
     table = Table(
         title="[bold]Goal Hierarchy & Status[/bold]",
         box=box.DOUBLE,
         show_header=True,
         header_style="bold cyan",
     )
-    
+
     table.add_column("Goal", style="white", width=40)
     table.add_column("Status", style="yellow", width=15)
     table.add_column("Priority", justify="center", width=10)
     table.add_column("Progress", justify="center", width=10)
-    
+
     main = goals[0]
     completed = sum(1 for g in goals[1:] if g.status == "completed")
     total = len(goals) - 1
-    
+
     # Main goal
     table.add_row(
         f"[bold]{main.description}[/bold]",
@@ -165,7 +165,7 @@ async def demo_goal_management():
         str(main.priority),
         f"{completed}/{total}",
     )
-    
+
     # Sub-goals
     for goal in goals[1:]:
         status_color = {
@@ -173,20 +173,20 @@ async def demo_goal_management():
             "in_progress": "yellow",
             "pending": "white",
         }.get(goal.status, "white")
-        
+
         progress_text = {
             "completed": "100%",
             "in_progress": "50%",
             "pending": "0%",
         }.get(goal.status, "0%")
-        
+
         table.add_row(
             f"  └─ {goal.description}",
             f"[{status_color}]{goal.status}[/{status_color}]",
             str(goal.priority),
             progress_text,
         )
-    
+
     console.print(table)
     console.print()
 
@@ -194,29 +194,29 @@ async def demo_goal_management():
 async def demo_dual_planners():
     """Demonstrate dual planner system."""
     console.print("\n[bold yellow]═══ 2. Dual Planner System ═══[/bold yellow]\n")
-    
+
     # Legacy Planner
     console.print("[cyan]Legacy Planner (Rule-based):[/cyan]")
     legacy = LegacyPlanner()
     legacy_plan = await legacy.create_plan("Build REST API with authentication")
-    
+
     console.print("  [green]✓[/green] Fast, deterministic planning")
     console.print(f"  [green]✓[/green] Generated {len(legacy_plan.get('steps', []))} steps")
     console.print("  [green]✓[/green] Low resource requirements")
     console.print()
-    
+
     # LangGraph Planner
     console.print("[cyan]LangGraph Planner (Workflow-based):[/cyan]")
     langgraph = LangGraphPlanner()
     lg_plan = await langgraph.create_plan("Build REST API with authentication")
-    
+
     console.print("  [green]✓[/green] Multi-stage workflow (5 phases)")
     console.print("  [green]✓[/green] Goal complexity analysis")
     console.print("  [green]✓[/green] Automatic decomposition")
     console.print("  [green]✓[/green] Dependency tracking")
     console.print("  [green]✓[/green] Plan quality validation")
     console.print()
-    
+
     # Comparison
     comparison = Table(
         title="[bold]Planner Comparison[/bold]",
@@ -224,18 +224,18 @@ async def demo_dual_planners():
         show_header=True,
         header_style="bold magenta",
     )
-    
+
     comparison.add_column("Feature", style="cyan", width=25)
     comparison.add_column("Legacy", justify="center", width=15)
     comparison.add_column("LangGraph", justify="center", width=15)
-    
+
     comparison.add_row("Speed", "Fast ⚡", "Medium")
     comparison.add_row("Complexity", "Simple", "Advanced")
     comparison.add_row("Goal Decomposition", "Basic", "Automatic")
     comparison.add_row("Quality Validation", "❌", "✅")
     comparison.add_row("LLM Integration", "Optional", "Ready")
     comparison.add_row("Resource Usage", "Low", "Medium")
-    
+
     console.print(comparison)
     console.print()
 
@@ -243,9 +243,9 @@ async def demo_dual_planners():
 async def demo_security_policies():
     """Demonstrate advanced security policy evaluation."""
     console.print("\n[bold yellow]═══ 3. Advanced Security System ═══[/bold yellow]\n")
-    
+
     policy_layer = PolicyLayer()
-    
+
     # Add sophisticated policies
     policies = [
         {
@@ -267,13 +267,13 @@ async def demo_security_policies():
             "description": "Alert on sensitive data access",
         },
     ]
-    
+
     for policy_def in policies:
         policy_layer.add_policy(**policy_def)
         console.print(f"  [green]✓[/green] Added: {policy_def['name']}")
-    
+
     console.print()
-    
+
     # Test scenarios
     scenarios = [
         {
@@ -302,44 +302,41 @@ async def demo_security_policies():
             "expected": "alert",
         },
     ]
-    
+
     results_table = Table(
         title="[bold]Security Policy Evaluation Results[/bold]",
         box=box.DOUBLE,
         show_header=True,
         header_style="bold red",
     )
-    
+
     results_table.add_column("Scenario", style="white", width=30)
     results_table.add_column("Context", style="dim", width=30)
     results_table.add_column("Result", justify="center", width=15)
     results_table.add_column("Status", justify="center", width=10)
-    
+
     for scenario in scenarios:
-        result = policy_layer.evaluate_action(
-            action="test_action",
-            context=scenario["context"]
-        )
-        
+        result = policy_layer.evaluate_action(action="test_action", context=scenario["context"])
+
         context_str = ", ".join(f"{k}={v}" for k, v in list(scenario["context"].items())[:2])
-        
+
         result_color = {
             "allowed": "green",
             "blocked": "red",
             "confirmation": "yellow",
             "alert": "magenta",
         }.get(result.action.lower(), "white")
-        
+
         match = result.action.lower() == scenario["expected"]
         status = "[green]✓[/green]" if match else "[red]✗[/red]"
-        
+
         results_table.add_row(
             scenario["name"],
             context_str,
             f"[{result_color}]{result.action}[/{result_color}]",
             status,
         )
-    
+
     console.print(results_table)
     console.print()
 
@@ -347,12 +344,12 @@ async def demo_security_policies():
 async def demo_metacognition():
     """Demonstrate metacognition system."""
     console.print("\n[bold yellow]═══ 4. Metacognition & Self-Monitoring ═══[/bold yellow]\n")
-    
+
     metacog = MetaCognitionMonitor()
-    
+
     # Simulate some actions
     console.print("[cyan]Simulating agent actions...[/cyan]")
-    
+
     actions = [
         ("think", "analyze_requirements", True, 0.5),
         ("tool", "execute_code", True, 1.2),
@@ -363,7 +360,7 @@ async def demo_metacognition():
         ("think", "evaluate_progress", True, 0.6),
         ("tool", "execute_code", True, 1.0),
     ]
-    
+
     for action_type, action_name, success, duration in actions:
         await metacog.record_action(
             action_type=action_type,
@@ -371,28 +368,28 @@ async def demo_metacognition():
             success=success,
             duration=duration,
         )
-    
+
     await asyncio.sleep(0.5)
     console.print("  [green]✓[/green] Recorded 8 actions")
     console.print()
-    
+
     # Display metrics
     metrics = await metacog.get_metrics()
-    
+
     metrics_table = Table(
         title="[bold]Performance Metrics[/bold]",
         box=box.ROUNDED,
         show_header=True,
         header_style="bold green",
     )
-    
+
     metrics_table.add_column("Metric", style="cyan", width=30)
     metrics_table.add_column("Value", justify="right", width=20)
     metrics_table.add_column("Status", justify="center", width=10)
-    
+
     success_rate = metrics.get("success_rate", 0)
     status = "[green]✓[/green]" if success_rate >= 0.8 else "[yellow]⚠[/yellow]"
-    
+
     metrics_table.add_row(
         "Success Rate",
         f"{success_rate:.1%}",
@@ -413,7 +410,7 @@ async def demo_metacognition():
         str(metrics.get("error_count", 0)),
         "[yellow]⚠[/yellow]" if metrics.get("error_count", 0) > 0 else "[green]✓[/green]",
     )
-    
+
     console.print(metrics_table)
     console.print()
 
@@ -421,16 +418,16 @@ async def demo_metacognition():
 def demo_statistics():
     """Display overall system statistics."""
     console.print("\n[bold yellow]═══ System Statistics ═══[/bold yellow]\n")
-    
+
     stats_table = Table(
         box=box.DOUBLE,
         show_header=False,
         border_style="cyan",
     )
-    
+
     stats_table.add_column("Category", style="bold cyan", width=30)
     stats_table.add_column("Value", style="white", width=40)
-    
+
     stats = [
         ("Version", "0.1.0 (Production Ready)"),
         ("Test Coverage", "450 tests (184 unit + 266 integration)"),
@@ -443,10 +440,10 @@ def demo_statistics():
         ("Planners", "Dual system (Legacy + LangGraph)"),
         ("Production Status", "✅ Ready for deployment"),
     ]
-    
+
     for category, value in stats:
         stats_table.add_row(category, value)
-    
+
     console.print(stats_table)
     console.print()
 
@@ -454,7 +451,7 @@ def demo_statistics():
 def print_footer():
     """Print a summary footer."""
     console.print()
-    
+
     summary = Panel.fit(
         "[bold green]✓ Demonstration Complete![/bold green]\n\n"
         "[cyan]X-Agent Production-Ready Features:[/cyan]\n"
@@ -474,20 +471,20 @@ def print_footer():
 async def main():
     """Run the complete demonstration."""
     print_header()
-    
+
     # Feature overview
     console.print(create_feature_table())
     console.print()
-    
+
     # Interactive demos
     await demo_goal_management()
     await demo_dual_planners()
     await demo_security_policies()
     await demo_metacognition()
-    
+
     # Statistics
     demo_statistics()
-    
+
     # Footer
     print_footer()
 
