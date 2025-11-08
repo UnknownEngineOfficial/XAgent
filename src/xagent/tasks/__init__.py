@@ -12,17 +12,17 @@ Usage:
 
     # Enqueue a task
     result = execute_cognitive_loop.delay(agent_id="agent-1")
-    
+
     # Wait for result
     output = result.get(timeout=60)
 """
 
 from xagent.tasks.queue import celery_app
 from xagent.tasks.worker import (
+    cleanup_memory,
     execute_cognitive_loop,
     execute_tool,
     process_goal,
-    cleanup_memory,
 )
 
 __all__ = [

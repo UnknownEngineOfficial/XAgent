@@ -84,9 +84,7 @@ class TestExecuteCognitiveLoop:
 
     @patch("xagent.core.agent.XAgent")
     @patch("xagent.core.goal_engine.GoalEngine")
-    def test_execute_cognitive_loop_iteration_error(
-        self, mock_goal_engine, mock_agent
-    ):
+    def test_execute_cognitive_loop_iteration_error(self, mock_goal_engine, mock_agent):
         """Test cognitive loop with error during iteration."""
         # Setup mocks
         mock_agent_instance = MagicMock()
@@ -197,9 +195,7 @@ class TestProcessGoal:
 
         mock_planner = MagicMock()
         mock_planner_class.return_value = mock_planner
-        mock_planner.create_plan.return_value = {
-            "sub_goals": ["sub-goal-1", "sub-goal-2"]
-        }
+        mock_planner.create_plan.return_value = {"sub_goals": ["sub-goal-1", "sub-goal-2"]}
 
         # Execute task
         result = process_goal(goal_id="goal-123")
@@ -224,9 +220,7 @@ class TestProcessGoal:
 
     @patch("xagent.core.planner.Planner")
     @patch("xagent.core.goal_engine.GoalEngine")
-    def test_process_goal_no_sub_goals(
-        self, mock_goal_engine_class, mock_planner_class
-    ):
+    def test_process_goal_no_sub_goals(self, mock_goal_engine_class, mock_planner_class):
         """Test processing goal with no sub-goals."""
         # Setup mocks
         mock_goal_engine = MagicMock()

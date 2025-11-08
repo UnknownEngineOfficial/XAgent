@@ -10,7 +10,6 @@ This module provides metrics collection for Celery task execution:
 
 import logging
 import time
-from typing import Dict, Optional
 
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -62,7 +61,7 @@ active_workers_gauge = Gauge(
 )
 
 # Task state tracking (in-memory for now)
-_task_start_times: Dict[str, float] = {}
+_task_start_times: dict[str, float] = {}
 
 
 def record_task_started(task_name: str, task_id: str) -> None:
@@ -99,9 +98,7 @@ def record_task_completed(
         duration = time.time() - _task_start_times[task_id]
         task_duration_histogram.labels(task_name=task_name).observe(duration)
         del _task_start_times[task_id]
-        logger.debug(
-            f"Task completed: {task_name} (ID: {task_id}) in {duration:.2f}s"
-        )
+        logger.debug(f"Task completed: {task_name} (ID: {task_id}) in {duration:.2f}s")
     else:
         logger.warning(f"No start time found for task {task_id}")
 
@@ -151,7 +148,7 @@ def update_active_workers(count: int) -> None:
     active_workers_gauge.set(count)
 
 
-def get_queue_stats() -> Dict[str, int]:
+def get_queue_stats() -> dict[str, int]:
     """
     Get current queue statistics from Celery.
 
@@ -221,9 +218,7 @@ def update_metrics() -> None:
         worker_count = get_worker_count()
         update_active_workers(worker_count)
 
-        logger.debug(
-            f"Task metrics updated: {len(queue_stats)} queues, {worker_count} workers"
-        )
+        logger.debug(f"Task metrics updated: {len(queue_stats)} queues, {worker_count} workers")
 
     except Exception as e:
         logger.error(f"Error updating task metrics: {str(e)}")

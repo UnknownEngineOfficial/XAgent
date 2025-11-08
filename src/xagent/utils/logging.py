@@ -1,19 +1,16 @@
 """Logging configuration for X-Agent."""
 
-import sys
-import structlog
 from pathlib import Path
 from typing import Any
 
+import structlog
 from opentelemetry import trace
-
-from xagent.config import settings
 
 
 def add_trace_context(logger, method_name, event_dict):
     """
     Add OpenTelemetry trace context to log events.
-    
+
     This processor adds trace_id and span_id to logs when available,
     enabling correlation between logs and traces.
     """
@@ -56,10 +53,10 @@ def configure_logging() -> None:
 
 def get_logger(name: str) -> Any:
     """Get a configured logger instance.
-    
+
     Args:
         name: Logger name
-        
+
     Returns:
         Configured logger instance
     """
