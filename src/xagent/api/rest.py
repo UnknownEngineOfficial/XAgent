@@ -3,9 +3,9 @@
 import uuid
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -81,6 +81,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add rate limiting middleware (if enabled)
+if settings.rate_limiting_enabled:
+    from xagent.api.rate_limiting import RateLimitMiddleware, get_rate_limiter
+    
+    app.add_middleware(RateLimitMiddleware, rate_limiter=get_rate_limiter())
+    logger.info("Rate limiting enabled")
 
 # Instrument FastAPI with OpenTelemetry
 instrument_fastapi(app)
@@ -287,14 +294,20 @@ class GoalResponse(BaseModel):
 class GoalListResponse(BaseModel):
     """Goals list response."""
 
-    total: int = Field(..., description="Total number of goals", examples=[5])
-    goals: list[dict[str, Any]] = Field(..., description="List of goals")
+    total: int = Field(..., description="Total number of goals (all matching filters)", examples=[5])
+    page: int = Field(..., description="Current page number", examples=[1])
+    page_size: int = Field(..., description="Number of items per page", examples=[10])
+    total_pages: int = Field(..., description="Total number of pages", examples=[3])
+    goals: list[dict[str, Any]] = Field(..., description="List of goals for current page")
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "total": 2,
+                    "total": 25,
+                    "page": 1,
+                    "page_size": 10,
+                    "total_pages": 3,
                     "goals": [
                         {
                             "id": "goal-123",
@@ -639,20 +652,87 @@ async def create_goal(
     description="""
     Retrieve a list of all goals the agent is currently working on or has completed.
     
+    Supports pagination, filtering, and sorting for better data management.
+    
     **Requires**: `GOAL_READ` scope
     """,
-    response_description="List of all goals with their current status",
+    response_description="Paginated list of goals with their current status",
 )
-async def list_goals(current_user: User = Depends(verify_token)) -> GoalListResponse:
-    """List all goals. Requires GOAL_READ scope."""
+async def list_goals(
+    page: int = Query(1, ge=1, description="Page number (starts at 1)"),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page (max 100)"),
+    status: Optional[str] = Query(None, description="Filter by status (pending, in_progress, completed, failed, blocked)"),
+    mode: Optional[str] = Query(None, description="Filter by mode (goal_oriented, continuous)"),
+    priority_min: Optional[int] = Query(None, ge=1, le=10, description="Minimum priority (1-10)"),
+    priority_max: Optional[int] = Query(None, ge=1, le=10, description="Maximum priority (1-10)"),
+    sort_by: str = Query("created_at", description="Sort field (created_at, updated_at, priority, status)"),
+    sort_order: str = Query("desc", description="Sort order (asc, desc)"),
+    current_user: User = Depends(verify_token),
+) -> GoalListResponse:
+    """
+    List all goals with pagination, filtering, and sorting.
+    
+    Requires GOAL_READ scope.
+    """
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
-    goals = agent.goal_engine.list_goals()
+    # Get all goals
+    all_goals = agent.goal_engine.list_goals()
+
+    # Apply filters
+    filtered_goals = []
+    for goal in all_goals:
+        # Status filter
+        if status and goal.status.value != status:
+            continue
+        
+        # Mode filter
+        if mode and goal.mode.value != mode:
+            continue
+        
+        # Priority range filter
+        if priority_min is not None and goal.priority < priority_min:
+            continue
+        if priority_max is not None and goal.priority > priority_max:
+            continue
+        
+        filtered_goals.append(goal)
+
+    # Apply sorting
+    sort_reverse = (sort_order == "desc")
+    
+    if sort_by == "created_at":
+        filtered_goals.sort(key=lambda g: g.created_at or "", reverse=sort_reverse)
+    elif sort_by == "updated_at":
+        filtered_goals.sort(key=lambda g: g.updated_at or "", reverse=sort_reverse)
+    elif sort_by == "priority":
+        filtered_goals.sort(key=lambda g: g.priority, reverse=sort_reverse)
+    elif sort_by == "status":
+        filtered_goals.sort(key=lambda g: g.status.value, reverse=sort_reverse)
+    else:
+        # Default to created_at
+        filtered_goals.sort(key=lambda g: g.created_at or "", reverse=sort_reverse)
+
+    # Calculate pagination
+    total_items = len(filtered_goals)
+    total_pages = (total_items + page_size - 1) // page_size if total_items > 0 else 1
+    
+    # Ensure page is within bounds
+    if page > total_pages and total_items > 0:
+        page = total_pages
+    
+    # Get page slice
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    page_goals = filtered_goals[start_idx:end_idx]
 
     return GoalListResponse(
-        total=len(goals),
-        goals=[goal.to_dict() for goal in goals],
+        total=total_items,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        goals=[goal.to_dict() for goal in page_goals],
     )
 
 
