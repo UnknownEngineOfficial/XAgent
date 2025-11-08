@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     secret_key: str = Field(default="change-me-in-production", description="Secret key for JWT")
     jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
     jwt_expiration_minutes: int = Field(default=60, description="JWT expiration in minutes")
+    
+    # Rate Limiting
+    rate_limiting_enabled: bool = Field(default=True, description="Enable API rate limiting")
+    rate_limit_default: int = Field(default=100, description="Default rate limit per minute")
+    rate_limit_burst: int = Field(default=120, description="Default burst size")
 
     # OPA (Open Policy Agent) Configuration
     opa_url: str = Field(default="http://localhost:8181", description="OPA server URL")
