@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xagent-config
+  namespace: xagent
+data:
+  # Redis Configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # PostgreSQL Configuration
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "xagent"
+  POSTGRES_USER: "xagent"
+  
+  # ChromaDB Configuration
+  CHROMA_HOST: "chroma-service"
+  CHROMA_PORT: "8000"
+  
+  # Server Configuration
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  WS_HOST: "0.0.0.0"
+  WS_PORT: "8001"
+  
+  # Security
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRATION_MINUTES: "60"
+  
+  # Rate Limiting
+  RATE_LIMITING_ENABLED: "true"
+  RATE_LIMIT_DEFAULT: "100"
+  RATE_LIMIT_BURST: "120"
+  
+  # OPA Configuration
+  OPA_URL: "http://opa-service:8181"
+  OPA_ENABLED: "true"
+  OPA_TIMEOUT: "5"
+  
+  # Agent Configuration
+  AGENT_NAME: "X-Agent"
+  AGENT_MODE: "interactive"
+  
+  # Monitoring
+  PROMETHEUS_PORT: "9090"
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+  JAEGER_AGENT_HOST: "jaeger-agent"
+  JAEGER_AGENT_PORT: "6831"
