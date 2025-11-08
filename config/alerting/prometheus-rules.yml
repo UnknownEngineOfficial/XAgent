@@ -1,0 +1,290 @@
+# Prometheus Alert Rules for X-Agent
+# These rules define when alerts should be triggered
+
+groups:
+  - name: xagent_api_alerts
+    interval: 30s
+    rules:
+      # API is down
+      - alert: XAgentAPIDown
+        expr: up{job="xagent-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "X-Agent API is down"
+          description: "API instance {{ $labels.instance }} has been down for more than 1 minute"
+      
+      # High error rate
+      - alert: XAgentHighErrorRate
+        expr: |
+          rate(http_requests_total{job="xagent-api",status=~"5.."}[5m]) 
+          / 
+          rate(http_requests_total{job="xagent-api"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: high
+          service: api
+        annotations:
+          summary: "High error rate on X-Agent API"
+          description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+      
+      # High latency
+      - alert: XAgentHighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket{job="xagent-api"}[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High latency on X-Agent API"
+          description: "95th percentile latency is {{ $value }}s on {{ $labels.instance }}"
+      
+      # Too many requests
+      - alert: XAgentHighRequestRate
+        expr: |
+          rate(http_requests_total{job="xagent-api"}[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "Very high request rate"
+          description: "Request rate is {{ $value }} req/s on {{ $labels.instance }}"
+      
+      # Authentication failures
+      - alert: XAgentAuthenticationFailures
+        expr: |
+          rate(auth_attempts_total{job="xagent-api",status="failed"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: high
+          service: api
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} authentication failures per second on {{ $labels.instance }}"
+
+  - name: xagent_agent_alerts
+    interval: 30s
+    rules:
+      # Cognitive loop stuck
+      - alert: XAgentCognitiveLoopStuck
+        expr: |
+          time() - cognitive_loop_last_iteration_timestamp{job="xagent-api"} > 300
+        for: 2m
+        labels:
+          severity: critical
+          service: agent
+        annotations:
+          summary: "Cognitive loop appears stuck"
+          description: "No cognitive loop iteration in {{ $value }}s on {{ $labels.instance }}"
+      
+      # High failure rate
+      - alert: XAgentHighFailureRate
+        expr: |
+          rate(cognitive_loop_iterations_total{job="xagent-api",status="failed"}[10m])
+          /
+          rate(cognitive_loop_iterations_total{job="xagent-api"}[10m]) > 0.2
+        for: 5m
+        labels:
+          severity: high
+          service: agent
+        annotations:
+          summary: "High agent failure rate"
+          description: "Agent failure rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+      
+      # Goal completion rate low
+      - alert: XAgentLowGoalCompletionRate
+        expr: |
+          rate(goals_total{job="xagent-api",status="completed"}[1h])
+          /
+          rate(goals_total{job="xagent-api"}[1h]) < 0.5
+        for: 30m
+        labels:
+          severity: warning
+          service: agent
+        annotations:
+          summary: "Low goal completion rate"
+          description: "Goal completion rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+  - name: xagent_resource_alerts
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: XAgentHighCPU
+        expr: |
+          rate(process_cpu_seconds_total{job="xagent-api"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+      
+      # High memory usage
+      - alert: XAgentHighMemory
+        expr: |
+          process_resident_memory_bytes{job="xagent-api"} / 1024 / 1024 / 1024 > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}GB on {{ $labels.instance }}"
+      
+      # Disk space low
+      - alert: XAgentLowDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: high
+          service: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Only {{ $value | humanizePercentage }} disk space available on {{ $labels.instance }}"
+
+  - name: xagent_database_alerts
+    interval: 30s
+    rules:
+      # Redis down
+      - alert: XAgentRedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance {{ $labels.instance }} is down"
+      
+      # PostgreSQL down
+      - alert: XAgentPostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL instance {{ $labels.instance }} is down"
+      
+      # ChromaDB down
+      - alert: XAgentChromaDBDown
+        expr: up{job="chromadb"} == 0
+        for: 2m
+        labels:
+          severity: high
+          service: chromadb
+        annotations:
+          summary: "ChromaDB is down"
+          description: "ChromaDB instance {{ $labels.instance }} is down"
+      
+      # High database connections
+      - alert: XAgentHighDBConnections
+        expr: |
+          pg_stat_database_numbackends{job="postgresql"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "High number of database connections"
+          description: "{{ $value }} connections to PostgreSQL on {{ $labels.instance }}"
+      
+      # Redis memory usage high
+      - alert: XAgentRedisHighMemory
+        expr: |
+          redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis is using {{ $value | humanizePercentage }} of max memory on {{ $labels.instance }}"
+
+  - name: xagent_tool_alerts
+    interval: 30s
+    rules:
+      # Tool execution failures
+      - alert: XAgentToolExecutionFailures
+        expr: |
+          rate(tool_execution_total{job="xagent-api",status="error"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: tools
+        annotations:
+          summary: "High tool execution failure rate"
+          description: "{{ $value }} tool execution failures per second on {{ $labels.instance }}"
+      
+      # Tool execution timeout
+      - alert: XAgentToolExecutionTimeout
+        expr: |
+          rate(tool_execution_total{job="xagent-api",status="timeout"}[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: tools
+        annotations:
+          summary: "Tool execution timeouts"
+          description: "{{ $value }} tool execution timeouts per second on {{ $labels.instance }}"
+      
+      # Sandbox unavailable
+      - alert: XAgentSandboxUnavailable
+        expr: |
+          docker_sandbox_available{job="xagent-api"} == 0
+        for: 2m
+        labels:
+          severity: high
+          service: tools
+        annotations:
+          summary: "Docker sandbox unavailable"
+          description: "Docker sandbox is not available on {{ $labels.instance }}"
+
+  - name: xagent_worker_alerts
+    interval: 30s
+    rules:
+      # Worker down
+      - alert: XAgentWorkerDown
+        expr: up{job="xagent-worker"} == 0
+        for: 2m
+        labels:
+          severity: high
+          service: worker
+        annotations:
+          summary: "X-Agent worker is down"
+          description: "Worker instance {{ $labels.instance }} is down"
+      
+      # High task queue size
+      - alert: XAgentHighTaskQueue
+        expr: |
+          celery_task_queue_length{job="xagent-worker"} > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+        annotations:
+          summary: "High task queue size"
+          description: "Task queue has {{ $value }} tasks on {{ $labels.instance }}"
+      
+      # Task processing slow
+      - alert: XAgentSlowTaskProcessing
+        expr: |
+          histogram_quantile(0.95,
+            rate(celery_task_duration_seconds_bucket{job="xagent-worker"}[5m])
+          ) > 300
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+        annotations:
+          summary: "Slow task processing"
+          description: "95th percentile task duration is {{ $value }}s on {{ $labels.instance }}"

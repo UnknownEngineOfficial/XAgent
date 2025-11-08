@@ -1,0 +1,27 @@
+apiVersion: v2
+name: xagent
+description: A Helm chart for X-Agent - Autonomous AI Agent Platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - ai
+  - agent
+  - langchain
+  - autonomous
+  - cognitive
+maintainers:
+  - name: X-Agent Team
+    url: https://github.com/UnknownEngineOfficial/X-Agent
+home: https://github.com/UnknownEngineOfficial/X-Agent
+sources:
+  - https://github.com/UnknownEngineOfficial/X-Agent
+dependencies:
+  - name: redis
+    version: "18.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: postgresql
+    version: "13.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled

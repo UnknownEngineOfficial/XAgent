@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "xagent.fullname" . }}-config
+  labels:
+    {{- include "xagent.labels" . | nindent 4 }}
+data:
+  # Agent configuration
+  agent-mode: {{ .Values.config.agent.mode | quote }}
+  agent-max-iterations: {{ .Values.config.agent.maxIterations | quote }}
+  agent-thinking-timeout: {{ .Values.config.agent.thinkingTimeout | quote }}
+  
+  # LLM configuration
+  llm-provider: {{ .Values.config.llm.provider | quote }}
+  llm-model: {{ .Values.config.llm.model | quote }}
+  llm-temperature: {{ .Values.config.llm.temperature | quote }}
+  llm-max-tokens: {{ .Values.config.llm.maxTokens | quote }}
+  
+  # Logging
+  log-level: {{ .Values.config.log.level | quote }}
+  log-format: {{ .Values.config.log.format | quote }}
+  
+  # Monitoring
+  monitoring-enabled: {{ .Values.config.monitoring.enabled | quote }}
+  prometheus-port: {{ .Values.config.monitoring.prometheusPort | quote }}

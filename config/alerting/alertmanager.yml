@@ -1,0 +1,149 @@
+# AlertManager Configuration for X-Agent
+# This configuration defines how alerts are routed and sent to notification channels
+
+global:
+  # Default SMTP configuration (update with your SMTP server)
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alertmanager@xagent.example.com'
+  smtp_auth_username: 'alertmanager@xagent.example.com'
+  smtp_auth_password: 'changeme'
+  smtp_require_tls: true
+  
+  # Slack webhook (update with your webhook URL)
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  
+  # PagerDuty service key (update with your key)
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Define how long to wait before sending notification
+# Useful for grouping similar alerts
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  
+  # Child routes
+  routes:
+    # Critical alerts go to PagerDuty and Slack
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      continue: true
+    
+    # High severity alerts go to Slack
+    - match:
+        severity: high
+      receiver: 'high-alerts'
+      continue: true
+    
+    # API-related alerts
+    - match:
+        service: api
+      receiver: 'api-team'
+      group_by: ['alertname', 'instance']
+    
+    # Worker-related alerts
+    - match:
+        service: worker
+      receiver: 'worker-team'
+      group_by: ['alertname', 'instance']
+    
+    # Database alerts
+    - match_re:
+        service: (postgresql|redis|chromadb)
+      receiver: 'database-team'
+      group_by: ['alertname', 'instance']
+
+# Inhibition rules (prevent certain alerts when others are firing)
+inhibit_rules:
+  # If instance is down, don't alert on high latency
+  - source_match:
+      severity: 'critical'
+      alertname: 'InstanceDown'
+    target_match:
+      severity: 'warning'
+    equal: ['instance']
+  
+  # If database is down, don't alert on connection errors
+  - source_match:
+      severity: 'critical'
+      service: 'postgresql'
+    target_match:
+      severity: 'warning'
+      alertname: 'DatabaseConnectionError'
+
+# Notification receivers
+receivers:
+  # Default receiver (email)
+  - name: 'default'
+    email_configs:
+      - to: 'team@xagent.example.com'
+        headers:
+          Subject: '[X-Agent] Alert: {{ .GroupLabels.alertname }}'
+  
+  # Critical alerts (PagerDuty + Slack + Email)
+  - name: 'critical-alerts'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        severity: '{{ .GroupLabels.severity }}'
+    slack_configs:
+      - channel: '#xagent-critical'
+        title: ':fire: Critical Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'danger'
+        send_resolved: true
+    email_configs:
+      - to: 'oncall@xagent.example.com'
+        headers:
+          Subject: '[CRITICAL] X-Agent Alert: {{ .GroupLabels.alertname }}'
+  
+  # High severity alerts (Slack + Email)
+  - name: 'high-alerts'
+    slack_configs:
+      - channel: '#xagent-alerts'
+        title: ':warning: High Priority: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'warning'
+        send_resolved: true
+    email_configs:
+      - to: 'team@xagent.example.com'
+        headers:
+          Subject: '[HIGH] X-Agent Alert: {{ .GroupLabels.alertname }}'
+  
+  # API team notifications
+  - name: 'api-team'
+    slack_configs:
+      - channel: '#xagent-api'
+        title: 'API Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    email_configs:
+      - to: 'api-team@xagent.example.com'
+  
+  # Worker team notifications
+  - name: 'worker-team'
+    slack_configs:
+      - channel: '#xagent-workers'
+        title: 'Worker Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    email_configs:
+      - to: 'worker-team@xagent.example.com'
+  
+  # Database team notifications
+  - name: 'database-team'
+    slack_configs:
+      - channel: '#xagent-database'
+        title: 'Database Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'warning'
+        send_resolved: true
+    email_configs:
+      - to: 'database-team@xagent.example.com'
+
+# Templates for custom notification formats
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
