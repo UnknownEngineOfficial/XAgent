@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from xagent.config import settings
 from xagent.core.goal_engine import GoalEngine, GoalStatus
 from xagent.memory.memory_layer import MemoryLayer
 from xagent.utils.logging import get_logger
@@ -65,7 +66,7 @@ class CognitiveLoop:
         self.current_phase = LoopPhase.PERCEPTION
         self.running = False
         self.iteration_count = 0
-        self.max_iterations = 1000  # TODO: Make configurable via settings
+        self.max_iterations = settings.max_iterations
 
         # Perception queue for inputs
         self.perception_queue: asyncio.Queue = asyncio.Queue()
