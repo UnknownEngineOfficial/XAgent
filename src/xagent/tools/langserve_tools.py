@@ -3,6 +3,7 @@
 import re
 import uuid
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,35 @@ def get_sandbox() -> DockerSandbox:
             logger.error(f"Failed to initialize Docker sandbox: {e}")
             raise
     return _sandbox
+
+
+class HTMLTextExtractor(HTMLParser):
+    """Extract text from HTML, excluding script and style tags."""
+
+    def __init__(self):
+        super().__init__()
+        self.text_parts = []
+        self.skip_tags = {"script", "style"}
+        self.in_skip_tag = False
+
+    def handle_starttag(self, tag, attrs):
+        """Handle opening tags."""
+        if tag in self.skip_tags:
+            self.in_skip_tag = True
+
+    def handle_endtag(self, tag):
+        """Handle closing tags."""
+        if tag in self.skip_tags:
+            self.in_skip_tag = False
+
+    def handle_data(self, data):
+        """Handle text data."""
+        if not self.in_skip_tag:
+            self.text_parts.append(data)
+
+    def get_text(self):
+        """Get extracted text."""
+        return " ".join(self.text_parts)
 
 
 # Tool input schemas
@@ -304,17 +334,20 @@ async def web_search(
 
             # Extract text from HTML if requested
             if extract_text and "html" in content_type.lower():
-                # Simple HTML tag removal
-                content = re.sub(
-                    r"<script[^>]*>.*?</script>", "", content, flags=re.DOTALL | re.IGNORECASE
-                )
-                content = re.sub(
-                    r"<style[^>]*>.*?</style>", "", content, flags=re.DOTALL | re.IGNORECASE
-                )
-                content = re.sub(r"<[^>]+>", " ", content)
-                # Clean up whitespace
-                content = re.sub(r"\s+", " ", content)
-                content = content.strip()
+                # Use HTML parser to safely extract text (avoids regex pitfalls)
+                try:
+                    parser = HTMLTextExtractor()
+                    parser.feed(content)
+                    content = parser.get_text()
+                    # Clean up whitespace
+                    content = re.sub(r"\s+", " ", content)
+                    content = content.strip()
+                except Exception as e:
+                    logger.warning(f"HTML parsing failed, using raw content: {e}")
+                    # Fallback to basic text extraction if parser fails
+                    content = re.sub(r"<[^>]+>", " ", content)
+                    content = re.sub(r"\s+", " ", content)
+                    content = content.strip()
 
             # Truncate if too long
             if len(content) > max_length:

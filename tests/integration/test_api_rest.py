@@ -278,7 +278,9 @@ def test_invalid_method_returns_405(client):
 def test_create_goal_invalid_json(client):
     """Test creating goal with invalid JSON."""
     response = client.post(
-        "/goals", data="not valid json", headers={"Content-Type": "application/json"}
+        "/goals",
+        content="not valid json",
+        headers={"Content-Type": "application/json"},
     )
 
     # Should return 422 (validation error) or similar

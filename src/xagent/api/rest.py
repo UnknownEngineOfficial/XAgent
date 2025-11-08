@@ -1,6 +1,7 @@
 """REST API for X-Agent."""
 
 import uuid
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Any
 
@@ -40,11 +41,36 @@ setup_tracing(
     insecure=settings.tracing_insecure,
 )
 
+# Global agent instance
+agent: XAgent | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for FastAPI."""
+    global agent
+
+    # Startup
+    logger.info("Starting X-Agent API...")
+    agent = XAgent()
+    await agent.initialize()
+    logger.info("X-Agent API started")
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down X-Agent API...")
+    if agent:
+        await agent.stop()
+    logger.info("X-Agent API shut down")
+
+
 # Create FastAPI app
 app = FastAPI(
     title="X-Agent API",
     description="Autonomous AI Agent API",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -95,9 +121,6 @@ async def metrics_middleware(request: Request, call_next):
         )
         raise
 
-
-# Global agent instance
-agent: XAgent | None = None
 
 # Global health checker instance
 health_checker = HealthCheck()
@@ -240,27 +263,6 @@ async def get_current_user(current_user: User = Depends(verify_token)) -> dict[s
 
 
 # API endpoints
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize agent on startup."""
-    global agent
-
-    logger.info("Starting X-Agent API...")
-    agent = XAgent()
-    await agent.initialize()
-    logger.info("X-Agent API started")
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Cleanup on shutdown."""
-    global agent
-
-    logger.info("Shutting down X-Agent API...")
-    if agent:
-        await agent.stop()
-    logger.info("X-Agent API shutdown complete")
-
 
 @app.get("/")
 async def root() -> dict[str, str]:

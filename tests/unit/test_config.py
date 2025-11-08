@@ -187,15 +187,8 @@ def test_server_ports():
 
 def test_settings_field_descriptions():
     """Test that field descriptions are set."""
-    settings = Settings()
-
-    # Access field info through model (compatible with both pydantic v1 and v2)
-    try:
-        # Pydantic v2
-        fields = settings.model_fields
-    except AttributeError:
-        # Pydantic v1
-        fields = settings.__fields__
+    # Access field info through model class (Pydantic v2)
+    fields = Settings.model_fields
 
     assert "openai_api_key" in fields
     # Field description access differs between v1 and v2
