@@ -1,0 +1,331 @@
+# Default values for xagent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+## X-Agent API configuration
+api:
+  replicaCount: 3
+  
+  image:
+    repository: xagent/api
+    pullPolicy: IfNotPresent
+    tag: ""  # Defaults to Chart.AppVersion
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    annotations: {}
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  ## Liveness probe
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  
+  ## Readiness probe
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  
+  ## Startup probe
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 30
+
+## X-Agent WebSocket Gateway configuration
+websocket:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: xagent/websocket
+    pullPolicy: IfNotPresent
+    tag: ""  # Defaults to Chart.AppVersion
+  
+  service:
+    type: ClusterIP
+    port: 8001
+    annotations: {}
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+## X-Agent Worker configuration
+worker:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: xagent/worker
+    pullPolicy: IfNotPresent
+    tag: ""  # Defaults to Chart.AppVersion
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+## Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: xagent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+        - path: /ws
+          pathType: Prefix
+          service: websocket
+  tls:
+    - secretName: xagent-tls
+      hosts:
+        - xagent.example.com
+
+## Redis configuration (dependency)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: "changeme"
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+## PostgreSQL configuration (dependency)
+postgresql:
+  enabled: true
+  auth:
+    username: xagent
+    password: "changeme"
+    database: xagent
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+## ChromaDB configuration
+chromadb:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: chromadb/chroma
+    pullPolicy: IfNotPresent
+    tag: "0.4.15"
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+## Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+## Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+## Container Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false  # X-Agent needs to write logs
+
+## ConfigMap for application configuration
+config:
+  # Agent settings
+  agent:
+    mode: "autonomous"
+    maxIterations: 50
+    thinkingTimeout: 30
+  
+  # LLM settings
+  llm:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.7
+    maxTokens: 2000
+  
+  # Logging
+  log:
+    level: "INFO"
+    format: "json"
+  
+  # Monitoring
+  monitoring:
+    enabled: true
+    prometheusPort: 9090
+
+## Secrets (use external secret manager in production)
+secrets:
+  # OpenAI API Key
+  openaiApiKey: ""
+  
+  # JWT Secret
+  jwtSecret: ""
+  
+  # OPA Policy Token
+  opaPolicyToken: ""
+
+## Monitoring stack
+monitoring:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      scrapeTimeout: 10s
+  
+  grafana:
+    enabled: true
+    adminPassword: "changeme"
+    persistence:
+      enabled: true
+      size: 1Gi
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus:9090
+        isDefault: true
+  
+  jaeger:
+    enabled: true
+    allInOne:
+      enabled: true
+
+## Network Policies
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+
+## Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+## Node selector
+nodeSelector: {}
+
+## Tolerations
+tolerations: []
+
+## Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: xagent
+          topologyKey: kubernetes.io/hostname
