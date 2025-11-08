@@ -27,10 +27,10 @@ def test_record_task_completed():
     """Test recording task completion."""
     # Start a task
     record_task_started("test_task", "task-456")
-    
+
     # Small delay to ensure measurable duration
     time.sleep(0.01)
-    
+
     # Complete the task
     record_task_completed("test_task", "task-456", success=True)
     # Should not raise exception
@@ -74,7 +74,7 @@ def test_get_queue_stats_success(mock_celery_app):
     # Setup mock
     mock_inspect = MagicMock()
     mock_celery_app.control.inspect.return_value = mock_inspect
-    
+
     mock_inspect.active.return_value = {
         "worker1": [
             {
@@ -175,16 +175,16 @@ def test_update_metrics_error(mock_get_queue_stats):
 def test_task_duration_tracking():
     """Test that task duration is tracked correctly."""
     task_id = "duration-test-123"
-    
+
     # Start task
     record_task_started("test_task", task_id)
-    
+
     # Wait a bit
     time.sleep(0.05)
-    
+
     # Complete task
     record_task_completed("test_task", task_id, success=True)
-    
+
     # Duration should have been recorded (verified by no exception)
 
 
@@ -194,22 +194,22 @@ def test_multiple_tasks_tracking():
     record_task_started("task_a", "id-1")
     record_task_started("task_b", "id-2")
     record_task_started("task_c", "id-3")
-    
+
     # Complete in different order
     record_task_completed("task_b", "id-2", success=True)
     record_task_completed("task_a", "id-1", success=True)
     record_task_completed("task_c", "id-3", success=False)
-    
+
     # Should track all correctly
 
 
 def test_task_failed_updates_completion():
     """Test that task failure also updates completion metrics."""
     task_id = "fail-test-456"
-    
+
     record_task_started("test_task", task_id)
     record_task_failed("test_task", task_id)
-    
+
     # Should have recorded both failure and completion
 
 

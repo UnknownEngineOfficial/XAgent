@@ -59,7 +59,7 @@ def test_monitored_task_on_success():
     """Test MonitoredTask on_success callback."""
     task = MonitoredTask()
     task.name = "test_task"
-    
+
     # Should not raise exception
     task.on_success(retval={"result": "success"}, task_id="123", args=(), kwargs={})
 
@@ -69,9 +69,9 @@ def test_monitored_task_on_failure():
     with patch("xagent.tasks.queue.logger"):  # Mock logger to avoid conflicts
         task = MonitoredTask()
         task.name = "test_task"
-        
+
         exc = Exception("Test error")
-        
+
         # Should not raise exception
         task.on_failure(exc=exc, task_id="123", args=("arg1",), kwargs={"key": "value"}, einfo=None)
 
@@ -81,9 +81,9 @@ def test_monitored_task_on_retry():
     with patch("xagent.tasks.queue.logger"):  # Mock logger to avoid conflicts
         task = MonitoredTask()
         task.name = "test_task"
-        
+
         exc = Exception("Test error")
-        
+
         # Should not raise exception
         task.on_retry(exc=exc, task_id="123", args=("arg1",), kwargs={"key": "value"}, einfo=None)
 
@@ -111,12 +111,12 @@ def test_celery_app_monitoring_enabled():
 def test_task_prerun_signal(mock_record_started):
     """Test that task prerun signal calls metric recording."""
     from xagent.tasks.queue import task_prerun_handler
-    
+
     mock_task = MagicMock()
     mock_task.name = "test_task"
-    
+
     task_prerun_handler(task_id="123", task=mock_task)
-    
+
     # Verify metric recording was called (if module is available)
     # Note: This test might pass even if metrics aren't recorded
     # if the import fails gracefully
@@ -126,12 +126,12 @@ def test_task_prerun_signal(mock_record_started):
 def test_task_postrun_signal(mock_record_completed):
     """Test that task postrun signal calls metric recording."""
     from xagent.tasks.queue import task_postrun_handler
-    
+
     mock_task = MagicMock()
     mock_task.name = "test_task"
-    
+
     task_postrun_handler(task_id="123", task=mock_task, retval={"result": "success"})
-    
+
     # Verify metric recording was called (if module is available)
 
 
@@ -139,15 +139,11 @@ def test_task_postrun_signal(mock_record_completed):
 def test_task_failure_signal(mock_record_failed):
     """Test that task failure signal calls metric recording."""
     from xagent.tasks.queue import task_failure_handler
-    
+
     exc = Exception("Test error")
-    
-    task_failure_handler(
-        task_id="123",
-        exception=exc,
-        task={"name": "test_task"}
-    )
-    
+
+    task_failure_handler(task_id="123", exception=exc, task={"name": "test_task"})
+
     # Verify metric recording was called (if module is available)
 
 
@@ -165,7 +161,7 @@ def test_celery_app_queue_priorities():
     """Test that queue priorities are configured."""
     assert celery_app.conf.task_queue_max_priority == 10
     assert celery_app.conf.task_default_priority == 5
-    
+
     # Check that queues exist (priority is internal kombu detail)
     queue_names = [q.name for q in celery_app.conf.task_queues]
     assert "tools" in queue_names  # Highest priority

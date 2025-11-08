@@ -1,24 +1,27 @@
 """Configuration management for X-Agent."""
 
-from typing import Optional
 try:
     from pydantic import Field
     from pydantic_settings import BaseSettings, SettingsConfigDict
+
     PYDANTIC_V2 = True
 except ImportError:
     from pydantic import BaseSettings, Field
+
     PYDANTIC_V2 = False
 
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     if not PYDANTIC_V2:
+
         class Config:
             env_file = ".env"
             env_file_encoding = "utf-8"
             case_sensitive = False
             extra = "ignore"
+
     else:
         model_config = SettingsConfigDict(
             env_file=".env",
@@ -58,12 +61,10 @@ class Settings(BaseSettings):
     ws_port: int = Field(default=8001, description="WebSocket port")
 
     # Security
-    secret_key: str = Field(
-        default="change-me-in-production", description="Secret key for JWT"
-    )
+    secret_key: str = Field(default="change-me-in-production", description="Secret key for JWT")
     jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
     jwt_expiration_minutes: int = Field(default=60, description="JWT expiration in minutes")
-    
+
     # OPA (Open Policy Agent) Configuration
     opa_url: str = Field(default="http://localhost:8181", description="OPA server URL")
     opa_enabled: bool = Field(default=False, description="Enable OPA policy enforcement")
@@ -76,7 +77,7 @@ class Settings(BaseSettings):
     )
     max_iterations: int = Field(default=100, description="Maximum iterations per task")
     loop_delay_seconds: float = Field(default=1.0, description="Delay between loop iterations")
-    
+
     # Planning Configuration
     use_langgraph_planner: bool = Field(
         default=False, description="Use LangGraph-based planner instead of legacy planner"
@@ -92,12 +93,14 @@ class Settings(BaseSettings):
     # Monitoring
     prometheus_port: int = Field(default=9090, description="Prometheus metrics port")
     log_level: str = Field(default="INFO", description="Log level")
-    
+
     # Observability - OpenTelemetry
     otlp_endpoint: str = Field(default="", description="OTLP collector endpoint")
     tracing_console: bool = Field(default=False, description="Enable console span exporter")
-    tracing_insecure: bool = Field(default=True, description="Use insecure OTLP connection (set False for production)")
-    
+    tracing_insecure: bool = Field(
+        default=True, description="Use insecure OTLP connection (set False for production)"
+    )
+
     # Celery Configuration
     celery_broker_url: str = Field(
         default="redis://localhost:6379/1", description="Celery broker URL"
@@ -117,25 +120,30 @@ class Settings(BaseSettings):
     def postgres_url(self) -> str:
         """Get PostgreSQL connection URL."""
         from urllib.parse import urlunparse
-        return urlunparse((
-            'postgresql',
-            f'{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}',
-            f'/{self.postgres_db}',
-            '', '', ''
-        ))
-    
+
+        return urlunparse(
+            (
+                "postgresql",
+                f"{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}",
+                f"/{self.postgres_db}",
+                "",
+                "",
+                "",
+            )
+        )
+
     @property
-    def SECRET_KEY(self) -> str:
+    def SECRET_KEY(self) -> str:  # noqa: N802
         """Alias for secret_key (backward compatibility)."""
         return self.secret_key
-    
+
     @property
-    def CELERY_BROKER_URL(self) -> str:
+    def CELERY_BROKER_URL(self) -> str:  # noqa: N802
         """Alias for celery_broker_url (Celery expects uppercase)."""
         return self.celery_broker_url
-    
+
     @property
-    def CELERY_RESULT_BACKEND(self) -> str:
+    def CELERY_RESULT_BACKEND(self) -> str:  # noqa: N802
         """Alias for celery_result_backend (Celery expects uppercase)."""
         return self.celery_result_backend
 

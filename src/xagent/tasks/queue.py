@@ -9,7 +9,7 @@ This module configures the Celery application with:
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from celery import Celery, Task
 from celery.signals import (
@@ -140,7 +140,7 @@ celery_app.Task = MonitoredTask
 
 # Celery signals for metrics collection
 @task_prerun.connect
-def task_prerun_handler(task_id: str, task: Task, **kwargs: Dict[str, Any]) -> None:
+def task_prerun_handler(task_id: str, task: Task, **kwargs: dict[str, Any]) -> None:
     """Called before task execution."""
     try:
         from xagent.monitoring.task_metrics import record_task_started
@@ -152,9 +152,7 @@ def task_prerun_handler(task_id: str, task: Task, **kwargs: Dict[str, Any]) -> N
 
 
 @task_postrun.connect
-def task_postrun_handler(
-    task_id: str, task: Task, retval: Any, **kwargs: Dict[str, Any]
-) -> None:
+def task_postrun_handler(task_id: str, task: Task, retval: Any, **kwargs: dict[str, Any]) -> None:
     """Called after task execution."""
     try:
         from xagent.monitoring.task_metrics import record_task_completed
@@ -165,9 +163,7 @@ def task_postrun_handler(
 
 
 @task_failure.connect
-def task_failure_handler(
-    task_id: str, exception: Exception, **kwargs: Dict[str, Any]
-) -> None:
+def task_failure_handler(task_id: str, exception: Exception, **kwargs: dict[str, Any]) -> None:
     """Called when task fails."""
     try:
         from xagent.monitoring.task_metrics import record_task_failed
@@ -178,15 +174,13 @@ def task_failure_handler(
 
 
 @task_success.connect
-def task_success_handler(result: Any, **kwargs: Dict[str, Any]) -> None:
+def task_success_handler(result: Any, **kwargs: dict[str, Any]) -> None:
     """Called when task succeeds."""
     logger.debug("Task completed successfully", extra={"result": result})
 
 
 @task_retry.connect
-def task_retry_handler(
-    request: Any, reason: str, **kwargs: Dict[str, Any]
-) -> None:
+def task_retry_handler(request: Any, reason: str, **kwargs: dict[str, Any]) -> None:
     """Called when task is retried."""
     try:
         from xagent.monitoring.task_metrics import record_task_retry

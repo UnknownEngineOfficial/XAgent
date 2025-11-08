@@ -9,10 +9,9 @@ This module defines the core tasks that can be executed by Celery workers:
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from celery import Task
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from xagent.tasks.queue import celery_app
 
@@ -28,9 +27,9 @@ logger = logging.getLogger(__name__)
 def execute_cognitive_loop(
     self: Task,
     agent_id: str,
-    goal_id: Optional[str] = None,
+    goal_id: str | None = None,
     max_iterations: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Execute the cognitive loop for an agent.
 
@@ -134,9 +133,9 @@ def execute_cognitive_loop(
 def execute_tool(
     self: Task,
     tool_name: str,
-    tool_args: Dict[str, Any],
-    agent_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    tool_args: dict[str, Any],
+    agent_id: str | None = None,
+) -> dict[str, Any]:
     """
     Execute a specific tool with given arguments.
 
@@ -192,7 +191,7 @@ def execute_tool(
             f"Error executing tool {tool_name}: {str(exc)}",
             exc_info=True,
         )
-        
+
         # Return error result instead of retrying for now
         return {
             "status": "failure",
@@ -210,8 +209,8 @@ def execute_tool(
 def process_goal(
     self: Task,
     goal_id: str,
-    agent_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    agent_id: str | None = None,
+) -> dict[str, Any]:
     """
     Process a specific goal.
 
@@ -270,7 +269,7 @@ def process_goal(
         # Create sub-goals if the plan suggests decomposition
         if plan and plan.get("sub_goals"):
             for sub_goal_desc in plan["sub_goals"]:
-                sub_goal = goal_engine.create_goal(
+                goal_engine.create_goal(
                     description=sub_goal_desc,
                     parent_id=goal_id,
                     priority=goal.priority,
@@ -302,7 +301,7 @@ def cleanup_memory(
     self: Task,
     max_age_hours: int = 24,
     batch_size: int = 100,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Clean up old memory entries.
 
@@ -332,8 +331,9 @@ def cleanup_memory(
 
         # Import here to avoid circular dependencies
         from datetime import datetime, timedelta
-        from xagent.memory.memory_layer import MemoryLayer
+
         from xagent.core.goal_engine import GoalEngine
+        from xagent.memory.memory_layer import MemoryLayer
 
         result = {
             "status": "success",
@@ -344,9 +344,9 @@ def cleanup_memory(
 
         # Clean up old memory entries
         try:
-            memory = MemoryLayer()
-            cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
-            
+            MemoryLayer()
+            datetime.now() - timedelta(hours=max_age_hours)
+
             # This is a placeholder - implement based on your memory layer API
             # result["entries_removed"] = memory.cleanup(cutoff_time, batch_size)
             logger.info("Memory cleanup completed (placeholder)")
@@ -355,7 +355,7 @@ def cleanup_memory(
 
         # Archive completed goals
         try:
-            goal_engine = GoalEngine()
+            GoalEngine()
             # This is a placeholder - implement based on your goal engine API
             # result["goals_archived"] = goal_engine.archive_completed_goals()
             logger.info("Goal archival completed (placeholder)")
@@ -384,7 +384,7 @@ def cleanup_memory(
 
 # Periodic tasks configuration
 @celery_app.on_after_finalize.connect
-def setup_periodic_tasks(sender: Any, **kwargs: Dict[str, Any]) -> None:
+def setup_periodic_tasks(sender: Any, **kwargs: dict[str, Any]) -> None:
     """
     Set up periodic tasks using Celery Beat.
 
