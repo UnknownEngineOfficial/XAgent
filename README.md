@@ -202,18 +202,34 @@ uvicorn xagent.api.rest:app --host 0.0.0.0 --port 8000
 
 ### Usage Examples
 
-#### CLI
+#### CLI (Typer-based)
 
 ```bash
-python -m xagent.cli.main
+# Show version
+python -m xagent.cli.main version
 
-# In CLI:
-start Build a web application
-goal Create REST API
-status
-command Add authentication
-feedback Looks good
-stop
+# Interactive mode (recommended)
+python -m xagent.cli.main interactive
+
+# In interactive mode:
+X-Agent> help           # Show available commands
+X-Agent> start Build a web application
+X-Agent> goal Create REST API
+X-Agent> status         # View agent status with rich formatting
+X-Agent> command Add authentication
+X-Agent> feedback Looks good
+X-Agent> goals          # List all goals in a table
+X-Agent> stop
+X-Agent> exit
+
+# Quick start with goal
+python -m xagent.cli.main start "Build a web application"
+
+# Start in background mode
+python -m xagent.cli.main start --background "Monitor system logs"
+
+# Shell completion (install once)
+python -m xagent.cli.main --install-completion
 ```
 
 #### REST API
