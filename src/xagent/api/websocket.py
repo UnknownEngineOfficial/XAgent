@@ -1,6 +1,7 @@
 """WebSocket Gateway for real-time communication."""
 
 import json
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any
 
@@ -15,11 +16,36 @@ logger = get_logger(__name__)
 # Configure logging
 configure_logging()
 
+# Global agent instance
+agent: XAgent | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    global agent
+    
+    # Startup
+    logger.info("Starting X-Agent WebSocket Gateway...")
+    agent = XAgent()
+    await agent.initialize()
+    logger.info("X-Agent WebSocket Gateway started")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down X-Agent WebSocket Gateway...")
+    if agent:
+        await agent.stop()
+    logger.info("X-Agent WebSocket Gateway shutdown complete")
+
+
 # Create FastAPI app for WebSocket
 app = FastAPI(
     title="X-Agent WebSocket Gateway",
     description="Real-time communication with X-Agent",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -31,8 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global agent instance and active connections
-agent: XAgent | None = None
+# Active connections
 active_connections: set[WebSocket] = set()
 
 
@@ -77,28 +102,6 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize agent on startup."""
-    global agent
-
-    logger.info("Starting X-Agent WebSocket Gateway...")
-    agent = XAgent()
-    await agent.initialize()
-    logger.info("X-Agent WebSocket Gateway started")
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Cleanup on shutdown."""
-    global agent
-
-    logger.info("Shutting down X-Agent WebSocket Gateway...")
-    if agent:
-        await agent.stop()
-    logger.info("X-Agent WebSocket Gateway shutdown complete")
 
 
 @app.get("/")
