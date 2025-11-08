@@ -102,7 +102,7 @@ async def shutdown_event() -> None:
 
 
 @app.get("/")
-async def root() -> dict[str, str]:
+async def root() -> dict[str, str | int]:
     """Root endpoint."""
     return {
         "name": "X-Agent WebSocket Gateway",
