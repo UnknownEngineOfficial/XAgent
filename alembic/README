@@ -1,0 +1,58 @@
+# X-Agent Database Migrations
+
+This directory contains Alembic migrations for the X-Agent database schema.
+
+## Setup
+
+The database configuration is automatically read from your `.env` file or environment variables.
+The following environment variables are used:
+
+- `POSTGRES_HOST` (default: localhost)
+- `POSTGRES_PORT` (default: 5432)
+- `POSTGRES_DB` (default: xagent)
+- `POSTGRES_USER` (default: xagent)
+- `POSTGRES_PASSWORD`
+
+## Usage
+
+### Apply migrations (upgrade to latest)
+```bash
+alembic upgrade head
+```
+
+### Revert last migration
+```bash
+alembic downgrade -1
+```
+
+### Create a new migration
+```bash
+alembic revision -m "Description of changes"
+```
+
+### Auto-generate migration from models
+```bash
+alembic revision --autogenerate -m "Description of changes"
+```
+
+### View current version
+```bash
+alembic current
+```
+
+### View migration history
+```bash
+alembic history
+```
+
+## Initial Schema
+
+The initial migration creates the following tables:
+
+- `goals` - Goal tracking with hierarchical relationships
+- `agent_states` - Agent state persistence
+- `memories` - Memory storage with type and importance
+- `actions` - Action execution history
+- `metric_snapshots` - Performance metric tracking
+
+Generic single-database configuration.
