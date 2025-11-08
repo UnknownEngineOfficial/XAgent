@@ -130,22 +130,85 @@ health_checker = HealthCheck()
 class GoalCreate(BaseModel):
     """Goal creation request."""
 
-    description: str
-    mode: str = "goal_oriented"  # goal_oriented or continuous
-    priority: int = 5
-    completion_criteria: list[str] = []
+    description: str = Field(
+        ...,
+        description="Description of the goal to be achieved",
+        examples=["Build a web application with user authentication"],
+    )
+    mode: str = Field(
+        default="goal_oriented",
+        description="Goal mode: 'goal_oriented' (completes when done) or 'continuous' (runs indefinitely)",
+        examples=["goal_oriented"],
+    )
+    priority: int = Field(
+        default=5,
+        ge=1,
+        le=10,
+        description="Priority level (1=lowest, 10=highest)",
+        examples=[5],
+    )
+    completion_criteria: list[str] = Field(
+        default_factory=list,
+        description="List of criteria that must be met for goal completion",
+        examples=[["Tests pass", "Documentation complete", "Code reviewed"]],
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "description": "Build a REST API for user management",
+                    "mode": "goal_oriented",
+                    "priority": 8,
+                    "completion_criteria": [
+                        "All endpoints implemented",
+                        "Tests pass with 90%+ coverage",
+                        "API documentation complete",
+                    ],
+                }
+            ]
+        }
+    }
 
 
 class CommandRequest(BaseModel):
     """Command request."""
 
-    command: str
+    command: str = Field(
+        ...,
+        description="Command to send to the agent",
+        examples=["Add authentication to the API"],
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"command": "Add authentication to the API"},
+                {"command": "Optimize database queries"},
+                {"command": "Write unit tests for the controller"},
+            ]
+        }
+    }
 
 
 class FeedbackRequest(BaseModel):
     """Feedback request."""
 
-    feedback: str
+    feedback: str = Field(
+        ...,
+        description="Feedback for the agent about its current work",
+        examples=["The implementation looks good, but add error handling"],
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"feedback": "The implementation looks good, but add error handling"},
+                {"feedback": "Please use TypeScript instead of JavaScript"},
+                {"feedback": "Great progress! Continue with the next task"},
+            ]
+        }
+    }
 
 
 # Authentication models
@@ -171,6 +234,83 @@ class CreateTokenRequest(BaseModel):
     username: str = Field(..., description="Username")
     role: UserRole = Field(default=UserRole.USER, description="User role")
     expires_hours: int = Field(default=24, description="Token expiration in hours")
+
+
+# Response models
+class StatusResponse(BaseModel):
+    """Agent status response."""
+
+    status: str = Field(..., description="Current agent status", examples=["started"])
+    message: str = Field(..., description="Status message", examples=["Agent started successfully"])
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "started",
+                    "message": "Agent started successfully",
+                },
+                {
+                    "status": "stopped",
+                    "message": "Agent stopped successfully",
+                },
+            ]
+        }
+    }
+
+
+class GoalResponse(BaseModel):
+    """Goal response."""
+
+    status: str = Field(..., description="Operation status", examples=["created"])
+    goal: dict[str, Any] = Field(..., description="Goal details")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "created",
+                    "goal": {
+                        "id": "goal-123",
+                        "description": "Build a REST API",
+                        "mode": "goal_oriented",
+                        "priority": 8,
+                        "status": "pending",
+                        "completion_criteria": ["All endpoints implemented", "Tests pass"],
+                    },
+                }
+            ]
+        }
+    }
+
+
+class GoalListResponse(BaseModel):
+    """Goals list response."""
+
+    total: int = Field(..., description="Total number of goals", examples=[5])
+    goals: list[dict[str, Any]] = Field(..., description="List of goals")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "total": 2,
+                    "goals": [
+                        {
+                            "id": "goal-123",
+                            "description": "Build a REST API",
+                            "status": "in_progress",
+                        },
+                        {
+                            "id": "goal-456",
+                            "description": "Add authentication",
+                            "status": "pending",
+                        },
+                    ],
+                }
+            ]
+        }
+    }
 
 
 # API endpoints
@@ -294,13 +434,34 @@ async def get_status(current_user: User | None = Depends(optional_auth)) -> dict
 
 @app.post(
     "/start",
+    response_model=StatusResponse,
     dependencies=[Depends(require_scope(TokenScope.AGENT_CONTROL.value))],
     tags=["Agent Control"],
+    summary="Start the agent",
+    description="""
+    Start the X-Agent with an optional initial goal.
+    
+    The agent will begin its cognitive loop and start working towards the specified goal.
+    If no goal is provided, the agent will start in idle mode and wait for commands.
+    
+    **Requires**: `AGENT_CONTROL` scope
+    
+    **Example Request**:
+    ```json
+    {
+        "description": "Build a REST API for user management",
+        "mode": "goal_oriented",
+        "priority": 8,
+        "completion_criteria": ["All endpoints implemented", "Tests pass"]
+    }
+    ```
+    """,
+    response_description="Confirmation that the agent has started",
 )
 async def start_agent(
     goal: GoalCreate | None = None,
     current_user: User = Depends(verify_token),
-) -> dict[str, str]:
+) -> StatusResponse:
     """Start the agent. Requires AGENT_CONTROL scope."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
@@ -310,15 +471,25 @@ async def start_agent(
 
     logger.info(f"Agent started by user: {current_user.username}")
 
-    return {"status": "started", "message": "Agent started successfully"}
+    return StatusResponse(status="started", message="Agent started successfully")
 
 
 @app.post(
     "/stop",
+    response_model=StatusResponse,
     dependencies=[Depends(require_scope(TokenScope.AGENT_CONTROL.value))],
     tags=["Agent Control"],
+    summary="Stop the agent",
+    description="""
+    Stop the currently running agent.
+    
+    This will gracefully shut down the agent's cognitive loop and save its current state.
+    
+    **Requires**: `AGENT_CONTROL` scope
+    """,
+    response_description="Confirmation that the agent has stopped",
 )
-async def stop_agent(current_user: User = Depends(verify_token)) -> dict[str, str]:
+async def stop_agent(current_user: User = Depends(verify_token)) -> StatusResponse:
     """Stop the agent. Requires AGENT_CONTROL scope."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
@@ -327,13 +498,35 @@ async def stop_agent(current_user: User = Depends(verify_token)) -> dict[str, st
 
     logger.info(f"Agent stopped by user: {current_user.username}")
 
-    return {"status": "stopped", "message": "Agent stopped successfully"}
+    return StatusResponse(status="stopped", message="Agent stopped successfully")
 
 
 @app.post(
     "/command",
     dependencies=[Depends(require_scope(TokenScope.AGENT_CONTROL.value))],
     tags=["Agent Control"],
+    summary="Send a command to the agent",
+    description="""
+    Send a command or instruction to the running agent.
+    
+    Commands can be used to:
+    - Provide new instructions
+    - Modify current behavior
+    - Request specific actions
+    - Guide the agent's decision-making
+    
+    The agent will process the command in its cognitive loop and act accordingly.
+    
+    **Requires**: `AGENT_CONTROL` scope
+    
+    **Example Request**:
+    ```json
+    {
+        "command": "Add authentication to the API endpoints"
+    }
+    ```
+    """,
+    response_description="Confirmation that the command was received",
 )
 async def send_command(
     request: CommandRequest,
@@ -378,12 +571,44 @@ async def send_feedback(
 
 # Goal management endpoints
 @app.post(
-    "/goals", dependencies=[Depends(require_scope(TokenScope.GOAL_WRITE.value))], tags=["Goals"]
+    "/goals",
+    dependencies=[Depends(require_scope(TokenScope.GOAL_WRITE.value))],
+    tags=["Goals"],
+    summary="Create a new goal",
+    description="""
+    Create a new goal for the agent to work on.
+    
+    Goals can be either:
+    - **goal_oriented**: The agent works until the goal is completed
+    - **continuous**: The agent works on the goal indefinitely until stopped
+    
+    Each goal has:
+    - **description**: What the agent should achieve
+    - **priority**: How important the goal is (1-10)
+    - **completion_criteria**: Specific conditions that must be met
+    
+    **Requires**: `GOAL_WRITE` scope
+    
+    **Example Request**:
+    ```json
+    {
+        "description": "Build a REST API for user management",
+        "mode": "goal_oriented",
+        "priority": 8,
+        "completion_criteria": [
+            "All endpoints implemented",
+            "Tests pass with 90%+ coverage",
+            "API documentation complete"
+        ]
+    }
+    ```
+    """,
+    response_description="The created goal with its ID and status",
 )
 async def create_goal(
     goal: GoalCreate,
     current_user: User = Depends(verify_token),
-) -> dict[str, Any]:
+) -> GoalResponse:
     """Create a new goal. Requires GOAL_WRITE scope."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
@@ -399,26 +624,36 @@ async def create_goal(
 
     logger.info(f"Goal created by {current_user.username}: {goal.description}")
 
-    return {
-        "status": "created",
-        "goal": created_goal.to_dict(),
-    }
+    return GoalResponse(
+        status="created",
+        goal=created_goal.to_dict(),
+    )
 
 
 @app.get(
-    "/goals", dependencies=[Depends(require_scope(TokenScope.GOAL_READ.value))], tags=["Goals"]
+    "/goals",
+    response_model=GoalListResponse,
+    dependencies=[Depends(require_scope(TokenScope.GOAL_READ.value))],
+    tags=["Goals"],
+    summary="List all goals",
+    description="""
+    Retrieve a list of all goals the agent is currently working on or has completed.
+    
+    **Requires**: `GOAL_READ` scope
+    """,
+    response_description="List of all goals with their current status",
 )
-async def list_goals(current_user: User = Depends(verify_token)) -> dict[str, Any]:
+async def list_goals(current_user: User = Depends(verify_token)) -> GoalListResponse:
     """List all goals. Requires GOAL_READ scope."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
     goals = agent.goal_engine.list_goals()
 
-    return {
-        "total": len(goals),
-        "goals": [goal.to_dict() for goal in goals],
-    }
+    return GoalListResponse(
+        total=len(goals),
+        goals=[goal.to_dict() for goal in goals],
+    )
 
 
 @app.get(
