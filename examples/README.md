@@ -1,8 +1,81 @@
-# Examples
+# X-Agent Examples
 
 This directory contains example scripts demonstrating various features of X-Agent.
 
-## Available Examples
+## 🌟 NEW: Featured Demonstrations (November 2025)
+
+### ⭐ 1. Complete System Showcase (`complete_results_showcase.py`) **[BEST FOR OVERVIEW]**
+
+The ultimate comprehensive demonstration of ALL X-Agent capabilities:
+
+**Features:**
+- System architecture visualization
+- Complete features matrix (66/66 features = 100%)
+- Test results (450/450 passing)
+- Performance metrics dashboard
+- Deployment options overview
+- Live workflow simulation
+
+**Run:**
+```bash
+cd /home/runner/work/X-Agent/X-Agent
+export PYTHONPATH=$(pwd)/src:$PYTHONPATH
+python examples/complete_results_showcase.py
+```
+
+**Duration:** ~20 seconds  
+**Best for:** Getting a complete overview of system capabilities
+
+---
+
+### ⭐ 2. Live Agent Demonstration (`real_agent_demo.py`) **[MOST IMPRESSIVE]**
+
+Shows the complete agent system with REAL execution:
+
+**Features:**
+- Hierarchical goal management (1 main + 5 sub-goals)
+- Intelligent planning (LLM-based and rule-based)
+- Real-time execution and status tracking
+- Performance metrics dashboard
+- Beautiful terminal visualization
+
+**Run:**
+```bash
+cd /home/runner/work/X-Agent/X-Agent
+export PYTHONPATH=$(pwd)/src:$PYTHONPATH
+python examples/real_agent_demo.py
+```
+
+**Duration:** ~10 seconds  
+**Best for:** Seeing the agent execute real goals in action
+
+---
+
+### ⭐ 3. Tool Execution Demo (`tool_execution_demo.py`) **[TECHNICAL SHOWCASE]**
+
+Demonstrates real tool execution with actual code running:
+
+**Features:**
+- Agent thinking and reasoning
+- Python code execution (sandbox)
+- JavaScript code execution (sandbox)
+- File operations (read/write)
+- Complex multi-step scenarios
+- Multi-tool integration
+
+**Run:**
+```bash
+cd /home/runner/work/X-Agent/X-Agent
+export PYTHONPATH=$(pwd)/src:$PYTHONPATH
+python examples/tool_execution_demo.py
+```
+
+**Duration:** ~15 seconds  
+**Best for:** Understanding tool capabilities and sandboxed execution
+
+---
+
+## 📚 Other Available Examples
 
 ### 1. Basic Usage (`basic_usage.py`)
 
