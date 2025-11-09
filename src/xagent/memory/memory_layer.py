@@ -11,14 +11,18 @@ from chromadb.config import Settings as ChromaSettings
 from sqlalchemy import Column, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from xagent.config import settings
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """Base class for memory models."""
+
+    pass
 
 
 class MemoryEntry(Base):
@@ -79,8 +83,9 @@ class ShortTermMemory(MemoryStore):
                 encoding="utf-8",
                 decode_responses=True,
             )
-            await self.redis.ping()
-            logger.info("Connected to Redis for short-term memory")
+            result = await self.redis.ping()
+            if result:
+                logger.info("Connected to Redis for short-term memory")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e}")
             raise
@@ -97,6 +102,10 @@ class ShortTermMemory(MemoryStore):
         if not self.redis:
             await self.connect()
 
+        if not self.redis:
+            logger.error("Redis connection not available")
+            return
+
         try:
             serialized = json.dumps(value)
             if ttl:
@@ -112,6 +121,10 @@ class ShortTermMemory(MemoryStore):
         if not self.redis:
             await self.connect()
 
+        if not self.redis:
+            logger.error("Redis connection not available")
+            return None
+
         try:
             value = await self.redis.get(f"stm:{key}")
             if value:
@@ -125,6 +138,10 @@ class ShortTermMemory(MemoryStore):
         """Delete from short-term memory."""
         if not self.redis:
             await self.connect()
+
+        if not self.redis:
+            logger.error("Redis connection not available")
+            return
 
         try:
             await self.redis.delete(f"stm:{key}")
@@ -145,8 +162,8 @@ class MediumTermMemory(MemoryStore):
 
     def __init__(self) -> None:
         """Initialize medium-term memory."""
-        self.engine = None
-        self.session_maker = None
+        self.engine: Any = None
+        self.session_maker: Any = None
 
     async def connect(self) -> None:
         """Connect to PostgreSQL."""
@@ -154,11 +171,7 @@ class MediumTermMemory(MemoryStore):
             # Use async engine with proper URL parsing
             from urllib.parse import urlparse, urlunparse
 
-            parsed = urlparse(
-                self.engine.config.postgres_url
-                if hasattr(self, "engine") and hasattr(self.engine, "config")
-                else settings.postgres_url
-            )
+            parsed = urlparse(settings.postgres_url)
             # Replace scheme for asyncpg
             async_url = urlunparse(
                 (
@@ -197,6 +210,10 @@ class MediumTermMemory(MemoryStore):
         if not self.session_maker:
             await self.connect()
 
+        if not self.session_maker:
+            logger.error("PostgreSQL connection not available")
+            return
+
         try:
             async with self.session_maker() as session:
                 expires_at = None
@@ -222,6 +239,10 @@ class MediumTermMemory(MemoryStore):
         if not self.session_maker:
             await self.connect()
 
+        if not self.session_maker:
+            logger.error("PostgreSQL connection not available")
+            return None
+
         try:
             async with self.session_maker() as session:
                 result = await session.get(MemoryEntry, key)
@@ -241,6 +262,10 @@ class MediumTermMemory(MemoryStore):
         """Delete from medium-term memory."""
         if not self.session_maker:
             await self.connect()
+
+        if not self.session_maker:
+            logger.error("PostgreSQL connection not available")
+            return
 
         try:
             async with self.session_maker() as session:
@@ -265,8 +290,8 @@ class LongTermMemory(MemoryStore):
 
     def __init__(self) -> None:
         """Initialize long-term memory."""
-        self.client = None
-        self.collection = None
+        self.client: Any = None
+        self.collection: Any = None
 
     async def connect(self) -> None:
         """Connect to ChromaDB."""
@@ -304,6 +329,10 @@ class LongTermMemory(MemoryStore):
         if not self.collection:
             await self.connect()
 
+        if not self.collection:
+            logger.error("ChromaDB connection not available")
+            return
+
         try:
             content = json.dumps(value) if not isinstance(value, str) else value
 
@@ -323,6 +352,10 @@ class LongTermMemory(MemoryStore):
         """Get from long-term memory by ID."""
         if not self.collection:
             await self.connect()
+
+        if not self.collection:
+            logger.error("ChromaDB connection not available")
+            return None
 
         try:
             result = self.collection.get(ids=[key])
@@ -350,6 +383,10 @@ class LongTermMemory(MemoryStore):
         """
         if not self.collection:
             await self.connect()
+
+        if not self.collection:
+            logger.error("ChromaDB connection not available")
+            return []
 
         try:
             results = self.collection.query(
@@ -385,6 +422,10 @@ class LongTermMemory(MemoryStore):
         """Delete from long-term memory."""
         if not self.collection:
             await self.connect()
+
+        if not self.collection:
+            logger.error("ChromaDB connection not available")
+            return
 
         try:
             self.collection.delete(ids=[key])

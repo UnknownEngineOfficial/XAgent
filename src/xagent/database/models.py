@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -15,9 +16,13 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, declarative_base, relationship
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """Base class for all database models."""
+
+    pass
 
 
 def utc_now() -> datetime:
@@ -47,11 +52,11 @@ class Goal(Base):
 
     __tablename__ = "goals"
 
-    id = Column(String, primary_key=True, index=True)
-    description = Column(Text, nullable=False)
-    status = Column(Enum(GoalStatus), default=GoalStatus.PENDING, nullable=False)
-    mode = Column(Enum(GoalMode), default=GoalMode.ONE_TIME, nullable=False)
-    priority = Column(Integer, default=5, nullable=False)
+    id: Any = Column(String, primary_key=True, index=True)
+    description: Any = Column(Text, nullable=False)
+    status: Any = Column(Enum(GoalStatus), default=GoalStatus.PENDING, nullable=False)
+    mode: Any = Column(Enum(GoalMode), default=GoalMode.ONE_TIME, nullable=False)
+    priority: Any = Column(Integer, default=5, nullable=False)
     parent_id = Column(String, ForeignKey("goals.id"), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)

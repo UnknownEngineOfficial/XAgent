@@ -1,7 +1,7 @@
 """Executor - Action execution for X-Agent."""
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
 from xagent.utils.logging import get_logger
 
@@ -52,9 +52,9 @@ class Executor:
         try:
             # Route to appropriate handler
             if action_type == "think":
-                output = await self._execute_think(action, parameters)
+                output = await self._execute_think(action or "", parameters)
             elif action_type == "tool_call":
-                output = await self._execute_tool_call(action, parameters)
+                output = await self._execute_tool_call(action or "", parameters)
             elif action_type == "create_goal":
                 output = await self._execute_create_goal(parameters)
             elif action_type == "start_goal":
@@ -84,7 +84,8 @@ class Executor:
     ) -> dict[str, Any]:
         """Execute tool call."""
         if self.tool_server:
-            return await self.tool_server.call_tool(tool_name, parameters)
+            result = await self.tool_server.call_tool(tool_name, parameters)
+            return cast(dict[str, Any], result)
         else:
             logger.warning("Tool server not available")
             return {

@@ -2,6 +2,7 @@
 
 import time
 from collections.abc import Callable
+from typing import Any, cast
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -168,7 +169,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Limits requests based on IP address and user authentication.
     """
 
-    def __init__(self, app, rate_limiter: RateLimiter):
+    def __init__(self, app: Any, rate_limiter: RateLimiter) -> None:
         """
         Initialize middleware.
 
@@ -224,7 +225,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return "user"
         return "anonymous"
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[..., Any]
+    ) -> Response:
         """
         Process request with rate limiting.
 
@@ -237,7 +240,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         # Skip rate limiting for health checks
         if request.url.path in ["/health", "/healthz", "/ready", "/metrics"]:
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         # Get client identifier and role
         client_id = self._get_client_identifier(request)
@@ -282,7 +285,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return response
 
         # Process request
-        response = await call_next(request)
+        response = cast(Response, await call_next(request))
 
         # Add rate limit headers to successful response
         for header, value in headers.items():

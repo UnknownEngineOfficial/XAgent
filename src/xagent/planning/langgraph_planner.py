@@ -6,7 +6,7 @@ with state management and conditional routing.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -83,7 +83,7 @@ class LangGraphPlanner:
         self.llm = llm
         self.graph = self._build_planning_graph()
 
-    def _build_planning_graph(self) -> StateGraph:
+    def _build_planning_graph(self) -> Any:
         """Build the LangGraph planning workflow."""
         workflow = StateGraph(PlanningState)
 
@@ -156,7 +156,7 @@ class LangGraphPlanner:
         try:
             # Run the planning workflow
             result = await self.graph.ainvoke(initial_state)
-            return result.get("plan")
+            return cast(dict[str, Any] | None, result.get("plan"))
         except Exception as e:
             logger.error(f"Planning workflow failed: {e}", exc_info=True)
             return self._fallback_plan(context)

@@ -24,7 +24,7 @@ class MetaCognitionMonitor:
             window_size: Size of performance history window
         """
         self.window_size = window_size
-        self.performance_history: deque = deque(maxlen=window_size)
+        self.performance_history: deque[dict[str, Any]] = deque(maxlen=window_size)
         self.error_patterns: dict[str, int] = {}
         self.loop_detection: dict[str, list[datetime]] = {}
 
@@ -38,12 +38,14 @@ class MetaCognitionMonitor:
         Returns:
             Evaluation metrics
         """
+        issues_detected: list[dict[str, Any]] = []
+        recommendations: list[str] = []
         evaluation = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "success_rate": 0.0,
             "efficiency": 0.0,
-            "issues_detected": [],
-            "recommendations": [],
+            "issues_detected": issues_detected,
+            "recommendations": recommendations,
         }
 
         # Add to performance history
@@ -66,16 +68,14 @@ class MetaCognitionMonitor:
             self.error_patterns[error] = self.error_patterns.get(error, 0) + 1
 
             if self.error_patterns[error] > 3:
-                evaluation["issues_detected"].append(
+                issues_detected.append(
                     {
                         "type": "repeated_error",
                         "error": error,
                         "count": self.error_patterns[error],
                     }
                 )
-                evaluation["recommendations"].append(
-                    "Consider alternative approach - repeated errors detected"
-                )
+                recommendations.append("Consider alternative approach - repeated errors detected")
 
         # Detect potential loops
         action_type = result.get("plan", {}).get("type")
@@ -93,16 +93,14 @@ class MetaCognitionMonitor:
             ]
 
             if len(recent_actions) > 10:
-                evaluation["issues_detected"].append(
+                issues_detected.append(
                     {
                         "type": "potential_loop",
                         "action": action_type,
                         "frequency": len(recent_actions),
                     }
                 )
-                evaluation["recommendations"].append(
-                    "Potential infinite loop detected - consider changing strategy"
-                )
+                recommendations.append("Potential infinite loop detected - consider changing strategy")
 
         # Calculate efficiency (placeholder)
         evaluation["efficiency"] = min(evaluation["success_rate"] * 1.2, 1.0)

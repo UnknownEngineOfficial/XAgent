@@ -165,7 +165,7 @@ class AuthManager:
         expire = now + expires_delta
 
         # Create payload
-        payload = {
+        payload: dict[str, Any] = {
             "sub": username,
             "role": role.value,
             "scopes": scopes,

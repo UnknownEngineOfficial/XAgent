@@ -256,7 +256,7 @@ class DockerSandbox:
         except Exception as e:
             logger.error(f"Cleanup failed: {e}")
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Cleanup on deletion."""
         try:
             self.cleanup()
