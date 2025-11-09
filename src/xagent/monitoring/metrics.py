@@ -272,13 +272,13 @@ agent_info.info(
 class MetricsCollector:
     """Helper class for collecting and managing metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize metrics collector."""
         self.start_times: dict[str, float] = {}
         self._max_start_times = 1000  # Limit to prevent memory leaks
         logger.info("Metrics collector initialized")
 
-    def _cleanup_old_start_times(self):
+    def _cleanup_old_start_times(self) -> None:
         """Remove old start times to prevent memory leaks."""
         if len(self.start_times) > self._max_start_times:
             # Remove oldest 20% of entries

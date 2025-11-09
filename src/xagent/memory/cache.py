@@ -60,7 +60,7 @@ class RedisCache:
         self._client: redis.Redis | None = None
         self._connected = False
 
-    async def connect(self):
+    async def connect(self) -> None:
         """Establish Redis connection."""
         try:
             self._client = await redis.from_url(
@@ -75,7 +75,7 @@ class RedisCache:
             self._connected = False
             raise
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Close Redis connection."""
         if self._client:
             await self._client.close()
@@ -113,7 +113,7 @@ class RedisCache:
         Returns:
             Cached value or None if not found
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             logger.warning("Cache not connected, skipping get")
             return None
 
@@ -146,7 +146,7 @@ class RedisCache:
         Returns:
             True if successful, False otherwise
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             logger.warning("Cache not connected, skipping set")
             return False
 
@@ -176,7 +176,7 @@ class RedisCache:
         Returns:
             True if successful, False otherwise
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             logger.warning("Cache not connected, skipping delete")
             return False
 
@@ -184,7 +184,7 @@ class RedisCache:
             cache_key = self._make_key(category, key)
             result = await self._client.delete(cache_key)
             logger.debug(f"Cache delete: {cache_key}")
-            return result > 0
+            return bool(result > 0)
         except Exception as e:
             logger.error(f"Cache delete error: {e}")
             return False
@@ -200,7 +200,7 @@ class RedisCache:
         Returns:
             Number of keys deleted
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             logger.warning("Cache not connected, skipping delete_pattern")
             return 0
 
@@ -219,7 +219,7 @@ class RedisCache:
             if keys:
                 deleted = await self._client.delete(*keys)
                 logger.debug(f"Cache delete pattern: {search_pattern} ({deleted} keys)")
-                return deleted
+                return int(deleted)
 
             return 0
         except Exception as e:
@@ -237,13 +237,13 @@ class RedisCache:
         Returns:
             True if key exists, False otherwise
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             return False
 
         try:
             cache_key = self._make_key(category, key)
             result = await self._client.exists(cache_key)
-            return result > 0
+            return bool(result > 0)
         except Exception as e:
             logger.error(f"Cache exists error: {e}")
             return False
@@ -260,13 +260,13 @@ class RedisCache:
         Returns:
             True if successful, False otherwise
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             return False
 
         try:
             cache_key = self._make_key(category, key)
             result = await self._client.expire(cache_key, ttl)
-            return result
+            return bool(result)
         except Exception as e:
             logger.error(f"Cache expire error: {e}")
             return False
@@ -282,7 +282,7 @@ class RedisCache:
         Returns:
             Dictionary of key-value pairs
         """
-        if not self._connected or not keys:
+        if not self._connected or not keys or self._client is None:
             return {}
 
         try:
@@ -314,7 +314,7 @@ class RedisCache:
         Returns:
             True if successful, False otherwise
         """
-        if not self._connected or not items:
+        if not self._connected or not items or self._client is None:
             return False
 
         try:
@@ -324,7 +324,8 @@ class RedisCache:
             for key, value in items.items():
                 cache_key = self._make_key(category, key)
                 serialized = self._serialize(value)
-                pipe.setex(cache_key, ttl, serialized)
+                if serialized is not None:
+                    await pipe.setex(cache_key, ttl, serialized)
 
             await pipe.execute()
             logger.debug(f"Cache set_many: {len(items)} items")
@@ -345,13 +346,13 @@ class RedisCache:
         Returns:
             New value after increment, or None on error
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             return None
 
         try:
             cache_key = self._make_key(category, key)
             result = await self._client.incrby(cache_key, amount)
-            return result
+            return int(result)
         except Exception as e:
             logger.error(f"Cache increment error: {e}")
             return None
@@ -363,7 +364,7 @@ class RedisCache:
         Returns:
             Dictionary of cache statistics
         """
-        if not self._connected:
+        if not self._connected or self._client is None:
             return {"connected": False}
 
         try:
@@ -393,7 +394,7 @@ class RedisCache:
         return round((hits / total) * 100, 2)
 
 
-def cache_key_from_args(*args, **kwargs) -> str:
+def cache_key_from_args(*args: Any, **kwargs: Any) -> str:
     """
     Generate cache key from function arguments.
 
@@ -408,7 +409,7 @@ def cache_key_from_args(*args, **kwargs) -> str:
     return hashlib.md5(key_data.encode()).hexdigest()
 
 
-def cached(category: str, ttl: int = CacheConfig.DEFAULT_TTL, key_func=None):
+def cached(category: str, ttl: int = CacheConfig.DEFAULT_TTL, key_func: Any = None) -> Any:
     """
     Decorator to cache function results.
 
@@ -423,9 +424,9 @@ def cached(category: str, ttl: int = CacheConfig.DEFAULT_TTL, key_func=None):
             return await db.query(Goal).filter_by(id=goal_id).first()
     """
 
-    def decorator(func):
+    def decorator(func: Any) -> Any:
         @wraps(func)
-        async def wrapper(self, *args, **kwargs):
+        async def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
             # Get cache instance
             cache = getattr(self, "_cache", None)
             if not cache or not cache._connected:
