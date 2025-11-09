@@ -14,23 +14,22 @@ Run with: python examples/automated_demo.py
 
 import asyncio
 import sys
-from pathlib import Path
 from datetime import datetime
-import json
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-from rich.table import Table
 from rich import box
+from rich.console import Console
 from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 from xagent.core.agent import XAgent
 from xagent.core.goal_engine import GoalMode
-from xagent.tools.langserve_tools import execute_code, write_file, read_file, think
+from xagent.tools.langserve_tools import execute_code, read_file, write_file
 
 console = Console()
 
@@ -165,7 +164,7 @@ async def demo_file_operations():
 
 This report demonstrates X-Agent's autonomous capabilities including:
 - Real-time code execution and computation
-- Data analysis and insight generation  
+- Data analysis and insight generation
 - File system operations
 - Self-directed task completion
 - Goal-oriented behavior
@@ -234,15 +233,13 @@ with high reliability.
         task = progress.add_task("Writing report...", total=None)
 
         # Write the report
-        result = await write_file.ainvoke({
-            "path": "/tmp/xagent_demo_report.md",
-            "content": report_content,
-            "append": False
-        })
+        result = await write_file.ainvoke(
+            {"path": "/tmp/xagent_demo_report.md", "content": report_content, "append": False}
+        )
 
         progress.update(task, completed=True)
 
-    console.print(f"\n[green]✓ Report generated![/green]")
+    console.print("\n[green]✓ Report generated![/green]")
     console.print(f"[cyan]Location:[/cyan] {result['path']}\n")
 
     # Read back and display preview
@@ -259,9 +256,7 @@ async def demo_agent_workflow():
     """Demonstrate full agent workflow with goals."""
     print_section("Agent Workflow", "🤖")
 
-    console.print(
-        "[yellow]Task:[/yellow] Initialize agent and manage complex goals\n"
-    )
+    console.print("[yellow]Task:[/yellow] Initialize agent and manage complex goals\n")
 
     # Initialize agent
     with Progress(
@@ -317,14 +312,10 @@ async def demo_agent_workflow():
     table.add_column("Status", style="yellow", width=12)
     table.add_column("Priority", style="magenta", justify="right", width=8)
 
-    table.add_row(
-        "Main", main_goal.description, main_goal.status.value, str(main_goal.priority)
-    )
+    table.add_row("Main", main_goal.description, main_goal.status.value, str(main_goal.priority))
 
     for i, goal in enumerate(sub_goals, 1):
-        table.add_row(
-            f"Sub-{i}", f"  └─ {goal.description}", goal.status.value, str(goal.priority)
-        )
+        table.add_row(f"Sub-{i}", f"  └─ {goal.description}", goal.status.value, str(goal.priority))
 
     console.print(table)
     console.print()
@@ -336,18 +327,20 @@ async def demo_agent_workflow():
         console.print(f"  [green]✓[/green] Sub-goal {i} completed")
 
     agent.goal_engine.update_goal(main_goal.id, status="completed")
-    console.print(f"  [green]✓[/green] Main goal completed\n")
+    console.print("  [green]✓[/green] Main goal completed\n")
 
     # Show final status
     status = await agent.get_status()
-    console.print(Panel.fit(
-        f"[bold green]Agent Status[/bold green]\n\n"
-        f"[cyan]Total Goals:[/cyan] {status['goals_summary']['total']}\n"
-        f"[cyan]Completed:[/cyan] {status['goals_summary']['completed']}\n"
-        f"[cyan]Success Rate:[/cyan] 100%",
-        border_style="green",
-        box=box.ROUNDED,
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold green]Agent Status[/bold green]\n\n"
+            f"[cyan]Total Goals:[/cyan] {status['goals_summary']['total']}\n"
+            f"[cyan]Completed:[/cyan] {status['goals_summary']['completed']}\n"
+            f"[cyan]Success Rate:[/cyan] 100%",
+            border_style="green",
+            box=box.ROUNDED,
+        )
+    )
 
     # Cleanup
     await agent.stop()
@@ -398,9 +391,7 @@ async def main():
 
         print_section("Demo Complete", "🎉")
 
-        summary_table = Table(
-            title="Results Summary", box=box.DOUBLE, border_style="green"
-        )
+        summary_table = Table(title="Results Summary", box=box.DOUBLE, border_style="green")
         summary_table.add_column("Component", style="cyan")
         summary_table.add_column("Status", style="green")
         summary_table.add_column("Details", style="white")

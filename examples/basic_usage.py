@@ -26,17 +26,17 @@ async def main():
     print("X-Agent Basic Example")
     print("=" * 60)
     print()
-    
+
     # Create agent
     print("1. Creating X-Agent...")
     agent = XAgent()
-    
+
     # Initialize agent
     print("2. Initializing agent...")
     await agent.initialize()
     print("   ✓ Agent initialized")
     print()
-    
+
     # Create a goal
     print("3. Creating a goal...")
     goal = agent.goal_engine.create_goal(
@@ -51,15 +51,15 @@ async def main():
     print(f"   ✓ Goal created: {goal.id}")
     print(f"   Description: {goal.description}")
     print()
-    
+
     # Start agent with goal
     print("4. Starting agent...")
     agent.goal_engine.set_active_goal(goal.id)
-    
+
     # Note: In a real scenario, you would start the cognitive loop
     # For this example, we'll just demonstrate the API
     # await agent.start()
-    
+
     # Get status
     print("5. Getting agent status...")
     status = await agent.get_status()
@@ -67,7 +67,7 @@ async def main():
     print(f"   Total goals: {status['goals_summary']['total']}")
     print(f"   Active goal: {goal.description[:50]}...")
     print()
-    
+
     # Demonstrate sending commands (would be processed by cognitive loop)
     print("6. Sending commands (simulation)...")
     commands = [
@@ -75,25 +75,25 @@ async def main():
         "Check memory capacity",
         "Generate status report",
     ]
-    
+
     for cmd in commands:
         print(f"   → {cmd}")
         # In real usage: await agent.send_command(cmd)
     print()
-    
+
     # List all goals
     print("7. Listing all goals...")
     all_goals = agent.goal_engine.list_goals()
     for g in all_goals:
         print(f"   - [{g.status.value}] {g.description}")
     print()
-    
+
     # Cleanup
     print("8. Cleaning up...")
     await agent.stop()
     print("   ✓ Agent stopped")
     print()
-    
+
     print("=" * 60)
     print("Example completed successfully!")
     print("=" * 60)

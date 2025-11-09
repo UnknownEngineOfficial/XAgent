@@ -14,21 +14,18 @@ No external dependencies required (Redis, PostgreSQL not needed).
 """
 
 import asyncio
-from datetime import datetime
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.text import Text
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+
 from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.table import Table
 
 from xagent.core.goal_engine import GoalEngine, GoalMode
+from xagent.core.metacognition import MetaCognitionMonitor
 from xagent.core.planner import Planner as LegacyPlanner
 from xagent.planning.langgraph_planner import LangGraphPlanner
-from xagent.core.metacognition import MetaCognitionMonitor
 from xagent.security.policy import PolicyLayer
-from xagent.config import settings
 
 console = Console()
 
@@ -208,7 +205,7 @@ async def demo_dual_planners():
     # LangGraph Planner
     console.print("[cyan]LangGraph Planner (Workflow-based):[/cyan]")
     langgraph = LangGraphPlanner()
-    lg_plan = await langgraph.create_plan("Build REST API with authentication")
+    await langgraph.create_plan("Build REST API with authentication")
 
     console.print("  [green]✓[/green] Multi-stage workflow (5 phases)")
     console.print("  [green]✓[/green] Goal complexity analysis")

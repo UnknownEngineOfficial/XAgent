@@ -13,21 +13,21 @@ Run with: python examples/standalone_results_demo.py
 
 import asyncio
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
-from rich import box
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 from xagent.core.goal_engine import GoalEngine, GoalMode, GoalStatus
-from xagent.core.planner import Planner
 from xagent.core.metacognition import MetaCognitionMonitor
+from xagent.core.planner import Planner
 from xagent.planning.langgraph_planner import LangGraphPlanner
 
 console = Console()
@@ -109,9 +109,7 @@ async def demo_goal_engine():
     console.print(f"[green]✓[/green] Created {len(sub_goals)} sub-goals\n")
 
     # Display goal hierarchy
-    table = Table(
-        title="Goal Hierarchy", box=box.ROUNDED, border_style="cyan", expand=False
-    )
+    table = Table(title="Goal Hierarchy", box=box.ROUNDED, border_style="cyan", expand=False)
     table.add_column("Level", style="cyan", width=10)
     table.add_column("Description", style="white", width=50)
     table.add_column("Status", style="yellow", width=15)
@@ -138,7 +136,9 @@ async def demo_goal_engine():
     # Simulate goal progression
     console.print("[bold]Simulating goal progression...[/bold]\n")
 
-    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+    with Progress(
+        SpinnerColumn(), TextColumn("[progress.description]{task.description}")
+    ) as progress:
         for i, goal in enumerate(sub_goals, 1):
             task = progress.add_task(f"Processing sub-goal {i}...", total=None)
             await asyncio.sleep(0.5)  # Simulate work
@@ -150,13 +150,17 @@ async def demo_goal_engine():
 
     # Mark main goal as completed
     goal_engine.update_goal_status(main_goal.id, GoalStatus.COMPLETED)
-    console.print(f"\n[bold green]✓ Main goal completed![/bold green]\n")
+    console.print("\n[bold green]✓ Main goal completed![/bold green]\n")
 
     # Show statistics
     stats = {
         "total": len(goal_engine.goals),
-        "completed": len([g for g in goal_engine.goals.values() if g.status == GoalStatus.COMPLETED]),
-        "in_progress": len([g for g in goal_engine.goals.values() if g.status == GoalStatus.IN_PROGRESS]),
+        "completed": len(
+            [g for g in goal_engine.goals.values() if g.status == GoalStatus.COMPLETED]
+        ),
+        "in_progress": len(
+            [g for g in goal_engine.goals.values() if g.status == GoalStatus.IN_PROGRESS]
+        ),
         "pending": len([g for g in goal_engine.goals.values() if g.status == GoalStatus.PENDING]),
     }
 
@@ -224,9 +228,7 @@ async def demo_planning_system():
         console.print(f"    Quality: [yellow]{langgraph_plan.quality_score:.2f}[/yellow]")
         console.print(f"    Actions: [yellow]{len(langgraph_plan.actions)}[/yellow]")
         for j, action in enumerate(langgraph_plan.actions[:3], 1):
-            console.print(
-                f"      {j}. {action.name} (priority: {action.priority})"
-            )
+            console.print(f"      {j}. {action.name} (priority: {action.priority})")
         if len(langgraph_plan.actions) > 3:
             console.print(f"      ... and {len(langgraph_plan.actions) - 3} more")
 
@@ -288,9 +290,7 @@ async def demo_metacognition():
             progress.update(task, advance=1)
 
             status_icon = "[green]✓[/green]" if success else "[red]✗[/red]"
-            console.print(
-                f"  {status_icon} {action_type} - {duration:.2f}s"
-            )
+            console.print(f"  {status_icon} {action_type} - {duration:.2f}s")
 
     console.print()
 
@@ -298,9 +298,7 @@ async def demo_metacognition():
     metrics = metacog.get_metrics()
 
     # Display metrics
-    metrics_table = Table(
-        title="Performance Metrics", box=box.ROUNDED, border_style="green"
-    )
+    metrics_table = Table(title="Performance Metrics", box=box.ROUNDED, border_style="green")
     metrics_table.add_column("Metric", style="cyan")
     metrics_table.add_column("Value", style="yellow", justify="right")
 
@@ -351,17 +349,19 @@ async def main():
         await asyncio.sleep(1)
 
         console.print()
-        console.print(Panel.fit(
-            "[bold green]✓ Goal Engine Demo Complete![/bold green]\n\n"
-            "[white]Successfully demonstrated:[/white]\n"
-            "  • Creating hierarchical goal structures\n"
-            "  • Managing 6 goals (1 main + 5 sub-goals)\n"
-            "  • Tracking goal status and progression\n"
-            "  • 100% goal completion rate\n"
-            "  • Real-time status monitoring\n",
-            border_style="green",
-            box=box.ROUNDED,
-        ))
+        console.print(
+            Panel.fit(
+                "[bold green]✓ Goal Engine Demo Complete![/bold green]\n\n"
+                "[white]Successfully demonstrated:[/white]\n"
+                "  • Creating hierarchical goal structures\n"
+                "  • Managing 6 goals (1 main + 5 sub-goals)\n"
+                "  • Tracking goal status and progression\n"
+                "  • 100% goal completion rate\n"
+                "  • Real-time status monitoring\n",
+                border_style="green",
+                box=box.ROUNDED,
+            )
+        )
         console.print()
 
         # Final summary
