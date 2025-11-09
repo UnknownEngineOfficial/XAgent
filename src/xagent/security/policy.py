@@ -112,8 +112,8 @@ class PolicyRule:
 
     def _split_by_operator(self, expression: str, operator: str) -> list[str]:
         """Split expression by operator while preserving case."""
-        parts = []
-        current = []
+        parts: list[str] = []
+        current: list[str] = []
         tokens = expression.split()
 
         for token in tokens:

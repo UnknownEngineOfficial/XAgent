@@ -12,7 +12,10 @@ __all__ = [
 ]
 
 
-def __getattr__(name):
+from typing import Any
+
+
+def __getattr__(name: str) -> Any:
     """Lazy import to avoid loading all dependencies at once."""
     if name == "XAgent":
         from xagent.core.agent import XAgent

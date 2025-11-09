@@ -7,7 +7,7 @@ import structlog
 from opentelemetry import trace
 
 
-def add_trace_context(logger, method_name, event_dict):
+def add_trace_context(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     """
     Add OpenTelemetry trace context to log events.
 

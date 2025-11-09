@@ -6,7 +6,7 @@ across the agent, API, tools, and memory operations.
 
 import os
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Iterator
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -98,7 +98,7 @@ def get_tracer() -> trace.Tracer:
     return _tracer  # type: ignore
 
 
-def instrument_fastapi(app) -> None:
+def instrument_fastapi(app: Any) -> None:
     """
     Instrument FastAPI application with automatic tracing.
 
@@ -116,7 +116,7 @@ def instrument_fastapi(app) -> None:
 def trace_operation(
     operation_name: str,
     attributes: dict[str, Any] | None = None,
-):
+) -> Iterator[Any]:
     """
     Context manager for tracing operations.
 
@@ -175,12 +175,12 @@ class TracingHelper:
     """Helper class for common tracing operations."""
 
     @staticmethod
-    def trace_cognitive_loop(phase: str):
+    def trace_cognitive_loop(phase: str) -> Iterator[Any]:
         """Trace a cognitive loop phase."""
         return trace_operation(f"cognitive_loop.{phase}")
 
     @staticmethod
-    def trace_tool_execution(tool_name: str, tool_args: dict[str, Any] | None = None):
+    def trace_tool_execution(tool_name: str, tool_args: dict[str, Any] | None = None) -> Iterator[Any]:
         """Trace tool execution."""
         attributes = {"tool.name": tool_name}
         if tool_args:
@@ -191,17 +191,17 @@ class TracingHelper:
         return trace_operation(f"tool.execute.{tool_name}", attributes)
 
     @staticmethod
-    def trace_memory_operation(operation: str, memory_type: str):
+    def trace_memory_operation(operation: str, memory_type: str) -> Iterator[Any]:
         """Trace memory operations."""
         return trace_operation(f"memory.{operation}", {"memory.type": memory_type})
 
     @staticmethod
-    def trace_planning(strategy: str):
+    def trace_planning(strategy: str) -> Iterator[Any]:
         """Trace planning operations."""
         return trace_operation("planner.plan", {"planning.strategy": strategy})
 
     @staticmethod
-    def trace_goal_operation(operation: str, goal_id: str | None = None):
+    def trace_goal_operation(operation: str, goal_id: str | None = None) -> Iterator[Any]:
         """Trace goal-related operations."""
         attributes = {}
         if goal_id:
