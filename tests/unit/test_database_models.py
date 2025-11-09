@@ -1,7 +1,7 @@
 """Tests for database models."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -157,7 +157,7 @@ class TestGoalModel:
             id="completed-goal",
             description="Completed goal",
             status=GoalStatus.COMPLETED,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
         )
         db_session.add(goal)
         db_session.commit()
@@ -377,7 +377,7 @@ class TestActionModel:
 
     def test_action_timing(self, db_session):
         """Test action timing fields."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         action = Action(
             agent_id="agent-4",
             action_type="think",
@@ -443,7 +443,7 @@ class TestMetricSnapshotModel:
                 metric_type="performance",
                 metric_name="response_time",
                 value=100.0 + i * 10,
-                timestamp=datetime.utcnow() + timedelta(seconds=i),
+                timestamp=datetime.now(timezone.utc) + timedelta(seconds=i),
             )
             db_session.add(metric)
 
