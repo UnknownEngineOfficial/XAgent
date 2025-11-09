@@ -1,18 +1,19 @@
 """Tests for database models."""
 
-import pytest
 from datetime import datetime, timedelta, timezone
+
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from xagent.database.models import (
+    Action,
+    AgentState,
     Base,
     Goal,
-    GoalStatus,
     GoalMode,
-    AgentState,
+    GoalStatus,
     Memory,
-    Action,
     MetricSnapshot,
 )
 
@@ -132,9 +133,7 @@ class TestGoalModel:
         retrieved_one_time = db_session.query(Goal).filter_by(id="goal-one-time").first()
         assert retrieved_one_time.mode == GoalMode.ONE_TIME
 
-        retrieved_continuous = (
-            db_session.query(Goal).filter_by(id="goal-continuous").first()
-        )
+        retrieved_continuous = db_session.query(Goal).filter_by(id="goal-continuous").first()
         assert retrieved_continuous.mode == GoalMode.CONTINUOUS
 
     def test_goal_metadata(self, db_session):
@@ -409,9 +408,7 @@ class TestMetricSnapshotModel:
         db_session.add(metric)
         db_session.commit()
 
-        retrieved = (
-            db_session.query(MetricSnapshot).filter_by(agent_id="agent-1").first()
-        )
+        retrieved = db_session.query(MetricSnapshot).filter_by(agent_id="agent-1").first()
         assert retrieved is not None
         assert retrieved.metric_type == "performance"
         assert retrieved.metric_name == "cpu_usage"
@@ -430,9 +427,7 @@ class TestMetricSnapshotModel:
         db_session.add(metric)
         db_session.commit()
 
-        retrieved = (
-            db_session.query(MetricSnapshot).filter_by(agent_id="agent-2").first()
-        )
+        retrieved = db_session.query(MetricSnapshot).filter_by(agent_id="agent-2").first()
         assert retrieved.metadata_ == metadata
 
     def test_multiple_metric_snapshots(self, db_session):
@@ -526,7 +521,5 @@ class TestRelationships:
         db_session.commit()
 
         # Query through relationship
-        action_retrieved = (
-            db_session.query(Action).filter_by(agent_id="agent-action").first()
-        )
+        action_retrieved = db_session.query(Action).filter_by(agent_id="agent-action").first()
         assert action_retrieved.goal.description == "Goal for testing action"
