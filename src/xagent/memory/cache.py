@@ -67,9 +67,14 @@ class RedisCache:
                 self.redis_url, encoding="utf-8", decode_responses=True, max_connections=50
             )
             # Test connection
-            await self._client.ping()
-            self._connected = True
-            logger.info("Redis cache connected successfully")
+            ping_result = self._client.ping()
+            if hasattr(ping_result, "__await__"):
+                result = await ping_result
+            else:
+                result = ping_result
+            if result:
+                self._connected = True
+                logger.info("Redis cache connected successfully")
         except Exception as e:
             logger.error(f"Failed to connect to Redis cache: {e}")
             self._connected = False
@@ -382,7 +387,7 @@ class RedisCache:
             logger.error(f"Failed to get cache stats: {e}")
             return {"connected": True, "error": str(e)}
 
-    def _calculate_hit_rate(self, info: dict) -> float:
+    def _calculate_hit_rate(self, info: dict[str, Any]) -> float:
         """Calculate cache hit rate."""
         hits = info.get("keyspace_hits", 0)
         misses = info.get("keyspace_misses", 0)
@@ -391,7 +396,7 @@ class RedisCache:
         if total == 0:
             return 0.0
 
-        return round((hits / total) * 100, 2)
+        return float(round((hits / total) * 100, 2))
 
 
 def cache_key_from_args(*args: Any, **kwargs: Any) -> str:

@@ -6,7 +6,7 @@ with state management and conditional routing.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -48,7 +48,7 @@ class PlanningState(TypedDict):
 
     # Decomposition results
     sub_goals: list[dict[str, Any]]
-    dependencies: list[dict[str, str]]
+    dependencies: list[dict[str, Any]]
 
     # Prioritization results
     prioritized_actions: list[dict[str, Any]]
@@ -83,7 +83,7 @@ class LangGraphPlanner:
         self.llm = llm
         self.graph = self._build_planning_graph()
 
-    def _build_planning_graph(self) -> StateGraph:
+    def _build_planning_graph(self) -> Any:
         """Build the LangGraph planning workflow."""
         workflow = StateGraph(PlanningState)
 
@@ -156,7 +156,7 @@ class LangGraphPlanner:
         try:
             # Run the planning workflow
             result = await self.graph.ainvoke(initial_state)
-            return result.get("plan")
+            return cast(dict[str, Any] | None, result.get("plan"))
         except Exception as e:
             logger.error(f"Planning workflow failed: {e}", exc_info=True)
             return self._fallback_plan(context)
@@ -411,6 +411,8 @@ class LangGraphPlanner:
     def _should_replan(self, state: PlanningState) -> str:
         """Decide whether to execute plan or re-analyze."""
         quality_score = state.get("quality_score", 0.0)
+        if quality_score is None:
+            quality_score = 0.0
 
         # If quality is too low and we haven't retried yet, re-analyze
         if quality_score < 0.3 and "replan_attempted" not in state.get("context", {}):
@@ -475,7 +477,7 @@ class LangGraphPlanner:
         """
         # Return stored quality score if available
         if "quality_score" in plan:
-            return plan["quality_score"]
+            return float(plan["quality_score"])
 
         # Otherwise, use simple heuristic
         required_fields = ["type", "action", "parameters", "reasoning"]

@@ -3,7 +3,7 @@
 import asyncio
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from xagent.config import settings
 from xagent.core.goal_engine import GoalEngine, GoalStatus
@@ -145,24 +145,27 @@ class CognitiveLoop:
         Returns:
             Perception data
         """
-        perception = {
+        inputs: list[Any] = []
+        active_goal: dict[str, Any] | None = None
+        perception: dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "inputs": [],
-            "active_goal": None,
+            "inputs": inputs,
+            "active_goal": active_goal,
         }
 
         # Collect all available perceptions (non-blocking)
         while not self.perception_queue.empty():
             try:
                 data = await asyncio.wait_for(self.perception_queue.get(), timeout=0.1)
-                perception["inputs"].append(data)
+                inputs.append(data)
             except asyncio.TimeoutError:
                 break
 
         # Get current active goal
-        active_goal = self.goal_engine.get_active_goal()
-        if active_goal:
-            perception["active_goal"] = active_goal.to_dict()
+        active_goal_obj = self.goal_engine.get_active_goal()
+        if active_goal_obj:
+            active_goal = active_goal_obj.to_dict()
+            perception["active_goal"] = active_goal
 
         return perception
 
@@ -243,7 +246,7 @@ class CognitiveLoop:
 
         # Use planner to generate action plan
         plan = await self.planner.create_plan(context)
-        return plan
+        return cast(dict[str, Any] | None, plan)
 
     async def _execute(self, plan: dict[str, Any]) -> dict[str, Any]:
         """

@@ -1,6 +1,7 @@
 """REST API for X-Agent."""
 
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Any
@@ -46,7 +47,7 @@ agent: XAgent | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan context manager for FastAPI."""
     global agent
 
@@ -95,7 +96,7 @@ instrument_fastapi(app)
 
 # Metrics middleware
 @app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
+async def metrics_middleware(request: Request, call_next: Any) -> Response:
     """Middleware to track API metrics."""
     metrics_collector = get_metrics_collector()
 
@@ -117,7 +118,7 @@ async def metrics_middleware(request: Request, call_next):
             status=response.status_code,
         )
 
-        return response
+        return response  # type: ignore[return-value]
 
     except Exception as e:
         # Record error
@@ -768,7 +769,7 @@ async def get_goal(
 
 
 @app.get("/health")
-async def health_check() -> dict[str, Any]:
+async def health_check() -> Response:
     """
     Comprehensive health check endpoint.
 
@@ -797,7 +798,7 @@ async def liveness_check() -> dict[str, Any]:
 
 
 @app.get("/ready")
-async def readiness_check() -> dict[str, Any]:
+async def readiness_check() -> Response:
     """
     Readiness probe endpoint.
 

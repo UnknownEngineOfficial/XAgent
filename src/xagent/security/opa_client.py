@@ -5,7 +5,7 @@ This module provides integration with Open Policy Agent for policy-based
 access control and security enforcement.
 """
 
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from structlog import get_logger
@@ -62,7 +62,7 @@ class OPAClient:
             response = await self._client.post(url, json=payload)
             response.raise_for_status()
 
-            result = response.json()
+            result = cast(dict[str, Any], response.json())
             logger.debug(
                 "OPA policy check completed",
                 policy_path=policy_path,
@@ -95,7 +95,7 @@ class OPAClient:
             True if allowed, False otherwise
         """
         result = await self.check_policy("xagent/base/allow", input_data)
-        return result.get("result", False)
+        return bool(result.get("result", False))
 
     async def check_api_access(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -151,15 +151,15 @@ class OPAClient:
             ),
         }
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP client."""
         await self._client.aclose()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "OPAClient":
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.close()
 

@@ -1,12 +1,20 @@
 """Configuration management for X-Agent."""
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pydantic_settings import BaseSettings as BaseSettingsType
+else:
+    BaseSettingsType = Any  # type: ignore[misc,assignment]
+
 try:
     from pydantic import Field
     from pydantic_settings import BaseSettings, SettingsConfigDict
 
     PYDANTIC_V2 = True
 except ImportError:
-    from pydantic import BaseSettings, Field
+    from pydantic import BaseSettings  # type: ignore[assignment,no-redef]
+    from pydantic import Field
 
     PYDANTIC_V2 = False
 

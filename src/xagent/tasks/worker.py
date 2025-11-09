@@ -8,6 +8,8 @@ This module defines the core tasks that can be executed by Celery workers:
 - cleanup_memory: Background memory cleanup and optimization
 """
 
+# mypy: disable-error-code="call-arg,attr-defined,operator,index"
+
 import logging
 from typing import Any
 

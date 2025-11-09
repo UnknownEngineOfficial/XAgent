@@ -7,7 +7,7 @@ across the agent, API, tools, and memory operations.
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, ContextManager
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -176,12 +176,14 @@ class TracingHelper:
     """Helper class for common tracing operations."""
 
     @staticmethod
-    def trace_cognitive_loop(phase: str) -> Iterator[Any]:
+    def trace_cognitive_loop(phase: str) -> ContextManager[Any]:
         """Trace a cognitive loop phase."""
-        return trace_operation(f"cognitive_loop.{phase}")
+        return trace_operation(f"cognitive_loop.{phase}")  # type: ignore[return-value]
 
     @staticmethod
-    def trace_tool_execution(tool_name: str, tool_args: dict[str, Any] | None = None) -> Iterator[Any]:
+    def trace_tool_execution(
+        tool_name: str, tool_args: dict[str, Any] | None = None
+    ) -> ContextManager[Any]:
         """Trace tool execution."""
         attributes = {"tool.name": tool_name}
         if tool_args:
@@ -189,25 +191,25 @@ class TracingHelper:
             attributes.update(
                 {f"tool.arg.{k}": str(v)[:MAX_TOOL_ARG_LENGTH] for k, v in tool_args.items()}
             )
-        return trace_operation(f"tool.execute.{tool_name}", attributes)
+        return trace_operation(f"tool.execute.{tool_name}", attributes)  # type: ignore[return-value]
 
     @staticmethod
-    def trace_memory_operation(operation: str, memory_type: str) -> Iterator[Any]:
+    def trace_memory_operation(operation: str, memory_type: str) -> ContextManager[Any]:
         """Trace memory operations."""
-        return trace_operation(f"memory.{operation}", {"memory.type": memory_type})
+        return trace_operation(f"memory.{operation}", {"memory.type": memory_type})  # type: ignore[return-value]
 
     @staticmethod
-    def trace_planning(strategy: str) -> Iterator[Any]:
+    def trace_planning(strategy: str) -> ContextManager[Any]:
         """Trace planning operations."""
-        return trace_operation("planner.plan", {"planning.strategy": strategy})
+        return trace_operation("planner.plan", {"planning.strategy": strategy})  # type: ignore[return-value]
 
     @staticmethod
-    def trace_goal_operation(operation: str, goal_id: str | None = None) -> Iterator[Any]:
+    def trace_goal_operation(operation: str, goal_id: str | None = None) -> ContextManager[Any]:
         """Trace goal-related operations."""
         attributes = {}
         if goal_id:
             attributes["goal.id"] = goal_id
-        return trace_operation(f"goal.{operation}", attributes)
+        return trace_operation(f"goal.{operation}", attributes)  # type: ignore[return-value]
 
 
 # Convenience instance

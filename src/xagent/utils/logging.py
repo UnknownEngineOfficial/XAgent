@@ -1,13 +1,15 @@
 """Logging configuration for X-Agent."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, MutableMapping
 
 import structlog
 from opentelemetry import trace
 
 
-def add_trace_context(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+def add_trace_context(
+    logger: Any, method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
     """
     Add OpenTelemetry trace context to log events.
 
