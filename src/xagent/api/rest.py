@@ -118,7 +118,7 @@ async def metrics_middleware(request: Request, call_next: Any) -> Response:
             status=response.status_code,
         )
 
-        return response
+        return response  # type: ignore[return-value]
 
     except Exception as e:
         # Record error

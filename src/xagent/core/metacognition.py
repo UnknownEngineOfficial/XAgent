@@ -104,7 +104,10 @@ class MetaCognitionMonitor:
 
         # Calculate efficiency (placeholder)
         success_rate = evaluation.get("success_rate", 0.0)
-        evaluation["efficiency"] = min(float(success_rate) * 1.2, 1.0)
+        if isinstance(success_rate, (int, float)):
+            evaluation["efficiency"] = min(float(success_rate) * 1.2, 1.0)
+        else:
+            evaluation["efficiency"] = 0.0
 
         return evaluation
 

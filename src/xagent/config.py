@@ -13,7 +13,7 @@ try:
 
     PYDANTIC_V2 = True
 except ImportError:
-    from pydantic import BaseSettings  # type: ignore[assignment]
+    from pydantic import BaseSettings  # type: ignore[assignment,no-redef]
     from pydantic import Field
 
     PYDANTIC_V2 = False

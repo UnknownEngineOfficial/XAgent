@@ -1,5 +1,7 @@
 """LangServe-based tool definitions for X-Agent."""
 
+# mypy: disable-error-code="no-untyped-def,arg-type"
+
 import re
 import uuid
 from datetime import datetime, timezone
