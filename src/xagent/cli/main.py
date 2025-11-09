@@ -60,7 +60,7 @@ async def initialize_agent() -> XAgent:
 
 
 @app.command()
-def interactive():
+def interactive() -> None:
     """
     Start X-Agent in interactive mode.
 
@@ -83,7 +83,7 @@ def interactive():
     asyncio.run(_interactive_loop())
 
 
-async def _interactive_loop():
+async def _interactive_loop() -> None:
     """Main interactive command loop."""
     running = True
 
@@ -144,7 +144,7 @@ async def _interactive_loop():
         console.print("[green]✓[/green] Cleanup complete", style="bold green")
 
 
-def _print_interactive_help():
+def _print_interactive_help() -> None:
     """Print help message for interactive mode."""
     table = Table(
         title="Available Commands", box=box.ROUNDED, show_header=True, header_style="bold cyan"
@@ -165,7 +165,7 @@ def _print_interactive_help():
     console.print(table)
 
 
-async def _cmd_start(goal: str):
+async def _cmd_start(goal: str) -> None:
     """Start the agent."""
     agent = get_agent()
 
@@ -182,7 +182,7 @@ async def _cmd_start(goal: str):
     console.print("[green]✓[/green] Agent started!", style="bold green")
 
 
-async def _cmd_stop():
+async def _cmd_stop() -> None:
     """Stop the agent."""
     agent = get_agent()
 
@@ -198,7 +198,7 @@ async def _cmd_stop():
     console.print("[green]✓[/green] Agent stopped!", style="bold green")
 
 
-async def _cmd_status():
+async def _cmd_status() -> None:
     """Show agent status."""
     agent = get_agent()
     status = await agent.get_status()
@@ -250,7 +250,7 @@ async def _cmd_status():
     console.print(perf_table)
 
 
-async def _cmd_goal(description: str):
+async def _cmd_goal(description: str) -> None:
     """Create a new goal."""
     agent = get_agent()
 
@@ -268,7 +268,7 @@ async def _cmd_goal(description: str):
     console.print(f"Description: {goal.description}")
 
 
-async def _cmd_list_goals():
+async def _cmd_list_goals() -> None:
     """List all goals."""
     agent = get_agent()
     goals = agent.goal_engine.list_goals()
@@ -301,7 +301,7 @@ async def _cmd_list_goals():
     console.print(table)
 
 
-async def _cmd_send_command(command: str):
+async def _cmd_send_command(command: str) -> None:
     """Send a command to the agent."""
     agent = get_agent()
 
@@ -313,7 +313,7 @@ async def _cmd_send_command(command: str):
     console.print("[green]✓[/green] Command sent!", style="bold green")
 
 
-async def _cmd_send_feedback(feedback: str):
+async def _cmd_send_feedback(feedback: str) -> None:
     """Send feedback to the agent."""
     agent = get_agent()
 
@@ -331,7 +331,7 @@ def start(
     background: Annotated[
         bool, typer.Option("--background", "-b", help="Run in background mode")
     ] = False,
-):
+) -> None:
     """
     Start the X-Agent with an optional initial goal.
 
@@ -346,7 +346,7 @@ def start(
         )
     )
 
-    async def _start():
+    async def _start() -> None:
         agent = await initialize_agent()
         await agent.start(initial_goal=goal)
 
@@ -360,14 +360,14 @@ def start(
 
 
 @app.command()
-def status():
+def status() -> None:
     """
     Show the current status of the X-Agent.
 
     Displays information about agent state, goals, and performance.
     """
 
-    async def _show_status():
+    async def _show_status() -> None:
         # For now, show message that agent needs to be initialized
         console.print(
             "[yellow]Note:[/yellow] Agent must be running to show status", style="bold yellow"
@@ -378,7 +378,7 @@ def status():
 
 
 @app.command()
-def version():
+def version() -> None:
     """Show X-Agent version information."""
     console.print(
         Panel.fit(
@@ -392,7 +392,7 @@ def version():
     )
 
 
-def main():
+def main() -> None:
     """Main entry point for CLI."""
     app()
 

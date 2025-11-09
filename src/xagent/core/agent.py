@@ -1,12 +1,12 @@
 """Main X-Agent class - Autonomous AI Agent."""
 
 import asyncio
-from typing import Any
+from typing import Any, Union
 
 from xagent.config import Settings
 from xagent.core.cognitive_loop import CognitiveLoop
 from xagent.core.executor import Executor
-from xagent.core.goal_engine import GoalEngine, GoalMode
+from xagent.core.goal_engine import GoalEngine, GoalMode, GoalStatus
 from xagent.core.metacognition import MetaCognitionMonitor
 from xagent.core.planner import Planner
 from xagent.memory.memory_layer import MemoryLayer
@@ -41,6 +41,7 @@ class XAgent:
         self.memory = MemoryLayer()
 
         # Choose planner based on configuration
+        self.planner: Union[Planner, LangGraphPlanner]
         if self.settings.use_langgraph_planner:
             logger.info("Using LangGraph planner")
             self.planner = LangGraphPlanner()
@@ -172,9 +173,9 @@ class XAgent:
             "active_goal": None,
             "goals_summary": {
                 "total": len(self.goal_engine.goals),
-                "pending": len(self.goal_engine.list_goals(status="pending")),
-                "in_progress": len(self.goal_engine.list_goals(status="in_progress")),
-                "completed": len(self.goal_engine.list_goals(status="completed")),
+                "pending": len(self.goal_engine.list_goals(status=GoalStatus.PENDING)),
+                "in_progress": len(self.goal_engine.list_goals(status=GoalStatus.IN_PROGRESS)),
+                "completed": len(self.goal_engine.list_goals(status=GoalStatus.COMPLETED)),
             },
             "performance": self.metacognition.get_performance_summary(),
         }
