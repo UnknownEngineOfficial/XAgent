@@ -15,10 +15,10 @@ class TestPolicyRuleBasic:
             action=PolicyAction.BLOCK,
             condition="delete",
         )
-        
+
         context = {"action": "delete", "target": "file.txt"}
         assert rule.evaluate(context) is True
-        
+
         context = {"action": "read", "target": "file.txt"}
         assert rule.evaluate(context) is False
 
@@ -29,7 +29,7 @@ class TestPolicyRuleBasic:
             action=PolicyAction.ALLOW,
             condition=None,
         )
-        
+
         assert rule.evaluate({}) is True
         assert rule.evaluate({"any": "context"}) is True
 
@@ -40,10 +40,10 @@ class TestPolicyRuleBasic:
             action=PolicyAction.BLOCK,
             condition="DELETE",
         )
-        
+
         context = {"action": "delete"}
         assert rule.evaluate(context) is True
-        
+
         context = {"action": "Delete"}
         assert rule.evaluate(context) is True
 
@@ -58,15 +58,15 @@ class TestPolicyRuleLogicalOperators:
             action=PolicyAction.BLOCK,
             condition="delete AND system",
         )
-        
+
         # Both present
         context = {"action": "delete", "target": "system"}
         assert rule.evaluate(context) is True
-        
+
         # Only one present
         context = {"action": "delete", "target": "user"}
         assert rule.evaluate(context) is False
-        
+
         # Neither present
         context = {"action": "read", "target": "user"}
         assert rule.evaluate(context) is False
@@ -78,19 +78,19 @@ class TestPolicyRuleLogicalOperators:
             action=PolicyAction.BLOCK,
             condition="delete OR remove",
         )
-        
+
         # First present
         context = {"action": "delete"}
         assert rule.evaluate(context) is True
-        
+
         # Second present
         context = {"action": "remove"}
         assert rule.evaluate(context) is True
-        
+
         # Both present
         context = {"action": "delete and remove"}
         assert rule.evaluate(context) is True
-        
+
         # Neither present
         context = {"action": "read"}
         assert rule.evaluate(context) is False
@@ -102,11 +102,11 @@ class TestPolicyRuleLogicalOperators:
             action=PolicyAction.BLOCK,
             condition="NOT test",
         )
-        
+
         # Test NOT present - should match
         context = {"action": "production"}
         assert rule.evaluate(context) is True
-        
+
         # Test present - should not match
         context = {"action": "test"}
         assert rule.evaluate(context) is False
@@ -119,15 +119,15 @@ class TestPolicyRuleLogicalOperators:
             action=PolicyAction.BLOCK,
             condition="delete AND system OR remove AND config",
         )
-        
+
         # delete AND system = True
         context = {"action": "delete", "target": "system"}
         assert rule.evaluate(context) is True
-        
+
         # remove AND config = True
         context = {"action": "remove", "target": "config"}
         assert rule.evaluate(context) is True
-        
+
         # Neither combination true
         context = {"action": "delete", "target": "user"}
         assert rule.evaluate(context) is False
@@ -143,15 +143,15 @@ class TestPolicyRuleParentheses:
             action=PolicyAction.BLOCK,
             condition="(delete OR remove) AND system",
         )
-        
+
         # delete AND system
         context = {"action": "delete", "target": "system"}
         assert rule.evaluate(context) is True
-        
+
         # remove AND system
         context = {"action": "remove", "target": "system"}
         assert rule.evaluate(context) is True
-        
+
         # delete without system
         context = {"action": "delete", "target": "user"}
         assert rule.evaluate(context) is False
@@ -163,15 +163,15 @@ class TestPolicyRuleParentheses:
             action=PolicyAction.BLOCK,
             condition="((delete OR remove) AND system) OR critical",
         )
-        
+
         # Inner: delete AND system = True
         context = {"action": "delete", "target": "system"}
         assert rule.evaluate(context) is True
-        
+
         # Critical alone matches OR
         context = {"action": "critical"}
         assert rule.evaluate(context) is True
-        
+
         # Neither matches
         context = {"action": "read", "target": "user"}
         assert rule.evaluate(context) is False
@@ -183,15 +183,15 @@ class TestPolicyRuleParentheses:
             action=PolicyAction.BLOCK,
             condition="NOT (test OR development)",
         )
-        
+
         # Neither test nor development
         context = {"env": "production"}
         assert rule.evaluate(context) is True
-        
+
         # Has test
         context = {"env": "test"}
         assert rule.evaluate(context) is False
-        
+
         # Has development
         context = {"env": "development"}
         assert rule.evaluate(context) is False
@@ -207,15 +207,15 @@ class TestPolicyRuleComplexExpressions:
             action=PolicyAction.REQUIRE_CONFIRMATION,
             condition="(delete OR remove) AND (system OR config OR important)",
         )
-        
+
         # Delete system file - should require confirmation
         context = {"action": "delete", "path": "/etc/system.conf"}
         assert rule.evaluate(context) is True
-        
+
         # Remove config - should require confirmation
         context = {"action": "remove", "path": "important.config"}
         assert rule.evaluate(context) is True
-        
+
         # Delete user file - should not match
         context = {"action": "delete", "path": "/home/user/temp.txt"}
         assert rule.evaluate(context) is False
@@ -227,15 +227,15 @@ class TestPolicyRuleComplexExpressions:
             action=PolicyAction.BLOCK,
             condition="api AND (excessive OR limit OR quota)",
         )
-        
+
         # API with excessive calls
         context = {"type": "api", "status": "excessive calls"}
         assert rule.evaluate(context) is True
-        
+
         # API limit reached
         context = {"type": "api", "message": "rate limit reached"}
         assert rule.evaluate(context) is True
-        
+
         # Normal API call
         context = {"type": "api", "status": "ok"}
         assert rule.evaluate(context) is False
@@ -247,19 +247,19 @@ class TestPolicyRuleComplexExpressions:
             action=PolicyAction.BLOCK,
             condition="(modify OR change OR update) AND (security OR auth OR credentials) AND NOT test",
         )
-        
+
         # Modify security in production
         context = {"action": "modify", "target": "security settings", "env": "production"}
         assert rule.evaluate(context) is True
-        
+
         # Change credentials in production
         context = {"action": "change", "target": "auth credentials", "env": "prod"}
         assert rule.evaluate(context) is True
-        
+
         # Modify security in test - allowed
         context = {"action": "modify", "target": "security settings", "env": "test"}
         assert rule.evaluate(context) is False
-        
+
         # Read security - not modify, so allowed
         context = {"action": "read", "target": "security settings"}
         assert rule.evaluate(context) is False
@@ -273,7 +273,7 @@ class TestPolicyLayer:
         # Start with empty policy layer (no defaults)
         layer = PolicyLayer()
         layer.rules = []  # Clear default rules
-        
+
         layer.add_rule(
             PolicyRule(
                 name="block_delete",
@@ -282,9 +282,9 @@ class TestPolicyLayer:
                 message="Deletion blocked",
             )
         )
-        
+
         result = layer.check_action({"action": "delete", "file": "test.txt"})
-        
+
         assert result["blocked"] is True
         assert result["allowed"] is False
         assert result["rule"] == "block_delete"
@@ -293,9 +293,9 @@ class TestPolicyLayer:
     def test_check_action_no_matching_rule(self):
         """Test action checking with no matching rule."""
         layer = PolicyLayer()
-        
+
         result = layer.check_action({"action": "read", "file": "test.txt"})
-        
+
         assert result["allowed"] is True
         assert result["blocked"] is False
         assert result["rule"] is None
@@ -305,7 +305,7 @@ class TestPolicyLayer:
         # Start with empty policy layer
         layer = PolicyLayer()
         layer.rules = []  # Clear default rules
-        
+
         layer.add_rule(
             PolicyRule(
                 name="confirm_delete",
@@ -313,9 +313,9 @@ class TestPolicyLayer:
                 condition="delete AND important",
             )
         )
-        
+
         result = layer.check_action({"action": "delete", "file": "important.txt"})
-        
+
         assert result["requires_confirmation"] is True
         assert result["blocked"] is False
         assert result["rule"] == "confirm_delete"
@@ -323,27 +323,27 @@ class TestPolicyLayer:
     def test_add_and_remove_rules(self):
         """Test adding and removing rules."""
         layer = PolicyLayer()
-        
+
         # Add rule
         rule = PolicyRule(name="test_rule", action=PolicyAction.BLOCK, condition="test")
         layer.add_rule(rule)
-        
+
         result = layer.check_action({"action": "test"})
         assert result["blocked"] is True
-        
+
         # Remove rule
         layer.remove_rule("test_rule")
-        
+
         result = layer.check_action({"action": "test"})
         assert result["allowed"] is True
 
     def test_default_policies_loaded(self):
         """Test that default policies are loaded."""
         layer = PolicyLayer()
-        
+
         # Should have default rules
         assert len(layer.rules) > 0
-        
+
         # Check for some default rules
         rule_names = [rule.name for rule in layer.rules]
         assert any("delete" in name.lower() for name in rule_names)
@@ -359,7 +359,7 @@ class TestPolicyRuleEdgeCases:
             action=PolicyAction.ALLOW,
             condition="",
         )
-        
+
         # Empty condition should match nothing
         context = {"any": "value"}
         assert rule.evaluate(context) is False
@@ -371,7 +371,7 @@ class TestPolicyRuleEdgeCases:
             action=PolicyAction.BLOCK,
             condition="  delete   AND   system  ",
         )
-        
+
         context = {"action": "delete", "target": "system"}
         assert rule.evaluate(context) is True
 
@@ -382,7 +382,7 @@ class TestPolicyRuleEdgeCases:
             action=PolicyAction.BLOCK,
             condition="delete",
         )
-        
+
         context = {"action": "delete", "path": "/path/to/file.txt", "user": "admin@example.com"}
         assert rule.evaluate(context) is True
 
@@ -393,7 +393,7 @@ class TestPolicyRuleEdgeCases:
             action=PolicyAction.BLOCK,
             condition="(delete AND system",
         )
-        
+
         # Should still work, treating as regular expression
         context = {"action": "delete", "target": "system"}
         # The implementation should handle this gracefully
@@ -407,7 +407,7 @@ class TestPolicyRuleEdgeCases:
             action=PolicyAction.BLOCK,
             condition="delete    AND     system",
         )
-        
+
         context = {"action": "delete", "target": "system"}
         assert rule.evaluate(context) is True
 

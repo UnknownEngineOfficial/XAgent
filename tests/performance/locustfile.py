@@ -21,11 +21,7 @@ class XAgentAPIUser(HttpUser):
     @task(3)
     def get_status(self) -> None:
         """Get agent status (most common operation)."""
-        with self.client.get(
-            "/status",
-            catch_response=True,
-            name="GET /status"
-        ) as response:
+        with self.client.get("/status", catch_response=True, name="GET /status") as response:
             if response.status_code == 200:
                 response.success()
             else:
@@ -34,11 +30,7 @@ class XAgentAPIUser(HttpUser):
     @task(2)
     def list_goals(self) -> None:
         """List all goals."""
-        with self.client.get(
-            "/goals",
-            catch_response=True,
-            name="GET /goals"
-        ) as response:
+        with self.client.get("/goals", catch_response=True, name="GET /goals") as response:
             if response.status_code in (200, 401):  # 401 if auth is required
                 response.success()
             else:
@@ -47,16 +39,9 @@ class XAgentAPIUser(HttpUser):
     @task(1)
     def create_goal(self) -> None:
         """Create a new goal."""
-        goal_data = {
-            "description": "Performance test goal",
-            "mode": "one_time",
-            "priority": 5
-        }
+        goal_data = {"description": "Performance test goal", "mode": "one_time", "priority": 5}
         with self.client.post(
-            "/goals",
-            json=goal_data,
-            catch_response=True,
-            name="POST /goals"
+            "/goals", json=goal_data, catch_response=True, name="POST /goals"
         ) as response:
             if response.status_code in (200, 201, 401):
                 if response.status_code in (200, 201):
@@ -75,11 +60,7 @@ class XAgentAPIUser(HttpUser):
     @task(1)
     def health_check(self) -> None:
         """Check health endpoint."""
-        with self.client.get(
-            "/health",
-            catch_response=True,
-            name="GET /health"
-        ) as response:
+        with self.client.get("/health", catch_response=True, name="GET /health") as response:
             if response.status_code == 200:
                 response.success()
             else:
@@ -88,11 +69,7 @@ class XAgentAPIUser(HttpUser):
     @task(2)
     def readiness_check(self) -> None:
         """Check readiness endpoint."""
-        with self.client.get(
-            "/ready",
-            catch_response=True,
-            name="GET /ready"
-        ) as response:
+        with self.client.get("/ready", catch_response=True, name="GET /ready") as response:
             if response.status_code in (200, 503):
                 response.success()
             else:
@@ -118,10 +95,7 @@ class XAgentAuthenticatedUser(HttpUser):
 
     def on_start(self) -> None:
         """Login and get authentication token."""
-        login_data = {
-            "username": "admin",
-            "password": "admin"  # Default test credentials
-        }
+        login_data = {"username": "admin", "password": "admin"}  # Default test credentials
         response = self.client.post("/auth/login", json=login_data)
         if response.status_code == 200:
             data = response.json()
@@ -136,20 +110,12 @@ class XAgentAuthenticatedUser(HttpUser):
     @task(5)
     def authenticated_status(self) -> None:
         """Get status with authentication."""
-        self.client.get(
-            "/status",
-            headers=self._get_headers(),
-            name="GET /status (auth)"
-        )
+        self.client.get("/status", headers=self._get_headers(), name="GET /status (auth)")
 
     @task(3)
     def authenticated_list_goals(self) -> None:
         """List goals with authentication."""
-        self.client.get(
-            "/goals",
-            headers=self._get_headers(),
-            name="GET /goals (auth)"
-        )
+        self.client.get("/goals", headers=self._get_headers(), name="GET /goals (auth)")
 
     @task(2)
     def authenticated_create_goal(self) -> None:
@@ -157,13 +123,10 @@ class XAgentAuthenticatedUser(HttpUser):
         goal_data = {
             "description": "Authenticated performance test goal",
             "mode": "one_time",
-            "priority": 5
+            "priority": 5,
         }
         self.client.post(
-            "/goals",
-            json=goal_data,
-            headers=self._get_headers(),
-            name="POST /goals (auth)"
+            "/goals", json=goal_data, headers=self._get_headers(), name="POST /goals (auth)"
         )
 
 

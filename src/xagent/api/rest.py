@@ -3,7 +3,7 @@
 import uuid
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -85,7 +85,7 @@ app.add_middleware(
 # Add rate limiting middleware (if enabled)
 if settings.rate_limiting_enabled:
     from xagent.api.rate_limiting import RateLimitMiddleware, get_rate_limiter
-    
+
     app.add_middleware(RateLimitMiddleware, rate_limiter=get_rate_limiter())
     logger.info("Rate limiting enabled")
 
@@ -294,7 +294,9 @@ class GoalResponse(BaseModel):
 class GoalListResponse(BaseModel):
     """Goals list response."""
 
-    total: int = Field(..., description="Total number of goals (all matching filters)", examples=[5])
+    total: int = Field(
+        ..., description="Total number of goals (all matching filters)", examples=[5]
+    )
     page: int = Field(..., description="Current page number", examples=[1])
     page_size: int = Field(..., description="Number of items per page", examples=[10])
     total_pages: int = Field(..., description="Total number of pages", examples=[3])
@@ -417,6 +419,7 @@ async def get_current_user(current_user: User = Depends(verify_token)) -> dict[s
 
 # API endpoints
 
+
 @app.get("/")
 async def root() -> dict[str, str]:
     """Root endpoint."""
@@ -453,12 +456,12 @@ async def get_status(current_user: User | None = Depends(optional_auth)) -> dict
     summary="Start the agent",
     description="""
     Start the X-Agent with an optional initial goal.
-    
+
     The agent will begin its cognitive loop and start working towards the specified goal.
     If no goal is provided, the agent will start in idle mode and wait for commands.
-    
+
     **Requires**: `AGENT_CONTROL` scope
-    
+
     **Example Request**:
     ```json
     {
@@ -495,9 +498,9 @@ async def start_agent(
     summary="Stop the agent",
     description="""
     Stop the currently running agent.
-    
+
     This will gracefully shut down the agent's cognitive loop and save its current state.
-    
+
     **Requires**: `AGENT_CONTROL` scope
     """,
     response_description="Confirmation that the agent has stopped",
@@ -521,17 +524,17 @@ async def stop_agent(current_user: User = Depends(verify_token)) -> StatusRespon
     summary="Send a command to the agent",
     description="""
     Send a command or instruction to the running agent.
-    
+
     Commands can be used to:
     - Provide new instructions
     - Modify current behavior
     - Request specific actions
     - Guide the agent's decision-making
-    
+
     The agent will process the command in its cognitive loop and act accordingly.
-    
+
     **Requires**: `AGENT_CONTROL` scope
-    
+
     **Example Request**:
     ```json
     {
@@ -590,18 +593,18 @@ async def send_feedback(
     summary="Create a new goal",
     description="""
     Create a new goal for the agent to work on.
-    
+
     Goals can be either:
     - **goal_oriented**: The agent works until the goal is completed
     - **continuous**: The agent works on the goal indefinitely until stopped
-    
+
     Each goal has:
     - **description**: What the agent should achieve
     - **priority**: How important the goal is (1-10)
     - **completion_criteria**: Specific conditions that must be met
-    
+
     **Requires**: `GOAL_WRITE` scope
-    
+
     **Example Request**:
     ```json
     {
@@ -651,9 +654,9 @@ async def create_goal(
     summary="List all goals",
     description="""
     Retrieve a list of all goals the agent is currently working on or has completed.
-    
+
     Supports pagination, filtering, and sorting for better data management.
-    
+
     **Requires**: `GOAL_READ` scope
     """,
     response_description="Paginated list of goals with their current status",
@@ -661,17 +664,21 @@ async def create_goal(
 async def list_goals(
     page: int = Query(1, ge=1, description="Page number (starts at 1)"),
     page_size: int = Query(10, ge=1, le=100, description="Number of items per page (max 100)"),
-    status: Optional[str] = Query(None, description="Filter by status (pending, in_progress, completed, failed, blocked)"),
-    mode: Optional[str] = Query(None, description="Filter by mode (goal_oriented, continuous)"),
-    priority_min: Optional[int] = Query(None, ge=1, le=10, description="Minimum priority (1-10)"),
-    priority_max: Optional[int] = Query(None, ge=1, le=10, description="Maximum priority (1-10)"),
-    sort_by: str = Query("created_at", description="Sort field (created_at, updated_at, priority, status)"),
+    status: str | None = Query(
+        None, description="Filter by status (pending, in_progress, completed, failed, blocked)"
+    ),
+    mode: str | None = Query(None, description="Filter by mode (goal_oriented, continuous)"),
+    priority_min: int | None = Query(None, ge=1, le=10, description="Minimum priority (1-10)"),
+    priority_max: int | None = Query(None, ge=1, le=10, description="Maximum priority (1-10)"),
+    sort_by: str = Query(
+        "created_at", description="Sort field (created_at, updated_at, priority, status)"
+    ),
     sort_order: str = Query("desc", description="Sort order (asc, desc)"),
     current_user: User = Depends(verify_token),
 ) -> GoalListResponse:
     """
     List all goals with pagination, filtering, and sorting.
-    
+
     Requires GOAL_READ scope.
     """
     if not agent:
@@ -686,22 +693,22 @@ async def list_goals(
         # Status filter
         if status and goal.status.value != status:
             continue
-        
+
         # Mode filter
         if mode and goal.mode.value != mode:
             continue
-        
+
         # Priority range filter
         if priority_min is not None and goal.priority < priority_min:
             continue
         if priority_max is not None and goal.priority > priority_max:
             continue
-        
+
         filtered_goals.append(goal)
 
     # Apply sorting
-    sort_reverse = (sort_order == "desc")
-    
+    sort_reverse = sort_order == "desc"
+
     if sort_by == "created_at":
         filtered_goals.sort(key=lambda g: g.created_at or "", reverse=sort_reverse)
     elif sort_by == "updated_at":
@@ -717,11 +724,11 @@ async def list_goals(
     # Calculate pagination
     total_items = len(filtered_goals)
     total_pages = (total_items + page_size - 1) // page_size if total_items > 0 else 1
-    
+
     # Ensure page is within bounds
     if page > total_pages and total_items > 0:
         page = total_pages
-    
+
     # Get page slice
     start_idx = (page - 1) * page_size
     end_idx = start_idx + page_size
