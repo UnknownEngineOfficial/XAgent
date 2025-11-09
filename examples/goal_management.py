@@ -23,9 +23,9 @@ async def main():
     print("X-Agent Goal Management Example")
     print("=" * 60)
     print()
-    
+
     engine = GoalEngine()
-    
+
     # 1. Create a goal-oriented task
     print("1. Creating goal-oriented task...")
     project_goal = engine.create_goal(
@@ -41,7 +41,7 @@ async def main():
     )
     print(f"   ✓ Created: {project_goal.description}")
     print()
-    
+
     # 2. Create sub-goals
     print("2. Breaking down into sub-goals...")
     backend_goal = engine.create_goal(
@@ -50,25 +50,25 @@ async def main():
         priority=8,
         completion_criteria=["REST endpoints", "Database models", "Authentication"],
     )
-    
+
     frontend_goal = engine.create_goal(
         description="Create frontend UI",
         parent_id=project_goal.id,
         priority=7,
         completion_criteria=["React components", "State management", "Routing"],
     )
-    
+
     testing_goal = engine.create_goal(
         description="Write tests",
         parent_id=project_goal.id,
         priority=6,
     )
-    
+
     print(f"   ✓ Backend: {backend_goal.description}")
     print(f"   ✓ Frontend: {frontend_goal.description}")
     print(f"   ✓ Testing: {testing_goal.description}")
     print()
-    
+
     # 3. Create a continuous task
     print("3. Creating continuous monitoring task...")
     monitor_goal = engine.create_goal(
@@ -78,16 +78,16 @@ async def main():
     )
     print(f"   ✓ Created continuous task: {monitor_goal.description}")
     print()
-    
+
     # 4. Show goal hierarchy
     print("4. Goal hierarchy:")
     hierarchy = engine.get_goal_hierarchy(project_goal.id)
     print(f"   Main Goal: {hierarchy['goal']['description']}")
-    print(f"   Sub-goals:")
-    for sub in hierarchy['sub_goals']:
+    print("   Sub-goals:")
+    for sub in hierarchy["sub_goals"]:
         print(f"     - {sub['goal']['description']}")
     print()
-    
+
     # 5. Get next goal to work on
     print("5. Getting next goal by priority...")
     next_goal = engine.get_next_goal()
@@ -95,38 +95,38 @@ async def main():
         print(f"   Next goal: {next_goal.description}")
         print(f"   Priority: {next_goal.priority}")
     print()
-    
+
     # 6. Simulate progress
     print("6. Simulating progress...")
     engine.set_active_goal(backend_goal.id)
     print(f"   Started: {backend_goal.description}")
-    
+
     engine.update_goal_status(backend_goal.id, GoalStatus.COMPLETED)
     print(f"   ✓ Completed: {backend_goal.description}")
     print()
-    
+
     # 7. Check completion status
     print("7. Checking completion status...")
     print(f"   Backend completed: {engine.check_goal_completion(backend_goal.id)}")
     print(f"   Project completed: {engine.check_goal_completion(project_goal.id)}")
     print(f"   Monitor completed: {engine.check_goal_completion(monitor_goal.id)} (continuous)")
     print()
-    
+
     # 8. List goals by status
     print("8. Goals by status:")
-    
+
     pending = engine.list_goals(status=GoalStatus.PENDING)
     completed = engine.list_goals(status=GoalStatus.COMPLETED)
-    
+
     print(f"   Pending ({len(pending)}):")
     for g in pending:
         print(f"     - {g.description}")
-    
+
     print(f"   Completed ({len(completed)}):")
     for g in completed:
         print(f"     - {g.description}")
     print()
-    
+
     print("=" * 60)
     print("Goal management example completed!")
     print("=" * 60)

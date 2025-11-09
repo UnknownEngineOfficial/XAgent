@@ -2,19 +2,18 @@
 
 from datetime import datetime
 from enum import Enum as PyEnum
-from typing import Optional
 
 from sqlalchemy import (
+    JSON,
+    Boolean,
     Column,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
     Text,
-    Boolean,
-    JSON,
-    Float,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship

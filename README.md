@@ -6,7 +6,30 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://img.shields.io/badge/coverage-90%2B-brightgreen.svg)](docs/TESTING.md)
 
+> **🚀 Want to see X-Agent in action immediately?** Run: `./DEMO.sh` or check [QUICK_RESULTS.md](QUICK_RESULTS.md)
+
 Der XAgent ist ein autonomer, dauerhaft aktiver KI-Agent, der eigenständig denkt, plant und handelt. Er verarbeitet Befehle, trifft Entscheidungen, lernt aus Erfahrungen und interagiert kontinuierlich mit dem Nutzer. Voll integriert in APIs, Tools und Datenbanken arbeitet er entweder bis zur Zielerreichung oder kontinuierlich als Dauerauftrag.
+
+## 🎯 Quick Start - See Results in 2 Minutes
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/UnknownEngineOfficial/X-Agent.git
+cd X-Agent
+pip install -r requirements.txt
+
+# 2. Run the demo (no external services needed!)
+export PYTHONPATH=$(pwd)/src:$PYTHONPATH
+python examples/standalone_results_demo.py
+```
+
+**What you'll see:**
+- ✅ 6 hierarchical goals created and completed
+- ✅ Real-time progress tracking
+- ✅ Beautiful formatted output
+- ✅ 100% success rate in ~6 seconds
+
+**For more examples:** See [QUICK_RESULTS.md](QUICK_RESULTS.md) for detailed examples and use cases.
 
 # 🧠 Autonomer X-Agent
 **WICHTIG: DER X-AGENT WIRD ALS EIGENES PROJEKT ENTWICKELT UND IN EINER EIGENEN REPO VERWALTET.**

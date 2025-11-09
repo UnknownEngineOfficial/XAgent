@@ -24,15 +24,15 @@ agent: XAgent | None = None
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     global agent
-    
+
     # Startup
     logger.info("Starting X-Agent WebSocket Gateway...")
     agent = XAgent()
     await agent.initialize()
     logger.info("X-Agent WebSocket Gateway started")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down X-Agent WebSocket Gateway...")
     if agent:
