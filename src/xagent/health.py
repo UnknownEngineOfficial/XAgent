@@ -34,7 +34,7 @@ class HealthCheck:
     Checks various dependencies and system components.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.start_time = datetime.now(timezone.utc)
 
     def check_redis(self) -> tuple[bool, str | None]:
@@ -160,7 +160,7 @@ class HealthCheck:
         }
 
 
-def main():
+def main() -> None:
     """
     Run health check as standalone HTTP server.
 
@@ -180,7 +180,7 @@ def main():
     health_checker = HealthCheck()
 
     class HealthHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
+        def do_GET(self) -> None:
             if self.path == "/health":
                 response = health_checker.get_health()
                 status_code = 200 if response["status"] == HealthStatus.HEALTHY else 503
@@ -201,7 +201,7 @@ def main():
             self.end_headers()
             self.wfile.write(json.dumps(response, indent=2).encode())
 
-        def log_message(self, format, *args):
+        def log_message(self, format: str, *args: Any) -> None:
             # Use logger instead of print
             logger.info(format % args)
 
