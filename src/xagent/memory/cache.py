@@ -67,7 +67,11 @@ class RedisCache:
                 self.redis_url, encoding="utf-8", decode_responses=True, max_connections=50
             )
             # Test connection
-            result = await self._client.ping()
+            ping_result = self._client.ping()
+            if hasattr(ping_result, "__await__"):
+                result = await ping_result
+            else:
+                result = ping_result
             if result:
                 self._connected = True
                 logger.info("Redis cache connected successfully")

@@ -103,7 +103,8 @@ class MetaCognitionMonitor:
                 recommendations.append("Potential infinite loop detected - consider changing strategy")
 
         # Calculate efficiency (placeholder)
-        evaluation["efficiency"] = min(evaluation["success_rate"] * 1.2, 1.0)
+        success_rate = evaluation.get("success_rate", 0.0)
+        evaluation["efficiency"] = min(float(success_rate) * 1.2, 1.0)
 
         return evaluation
 

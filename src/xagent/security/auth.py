@@ -6,7 +6,7 @@ Uses Authlib for secure token management.
 
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from authlib.jose import JoseError, jwt
 from fastapi import Depends, HTTPException, Security, status
@@ -305,7 +305,7 @@ async def verify_token(
     return user
 
 
-def require_scope(required_scope: str):
+def require_scope(required_scope: str) -> Callable[..., Any]:
     """
     Create a dependency that requires a specific scope.
 
@@ -332,7 +332,7 @@ def require_scope(required_scope: str):
     return scope_checker
 
 
-def require_any_scope(required_scopes: list[str]):
+def require_any_scope(required_scopes: list[str]) -> Callable[..., Any]:
     """
     Create a dependency that requires any of the given scopes.
 
@@ -356,7 +356,7 @@ def require_any_scope(required_scopes: list[str]):
     return scope_checker
 
 
-def require_role(required_role: UserRole):
+def require_role(required_role: UserRole) -> Callable[..., Any]:
     """
     Create a dependency that requires a specific role.
 

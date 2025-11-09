@@ -83,7 +83,11 @@ class ShortTermMemory(MemoryStore):
                 encoding="utf-8",
                 decode_responses=True,
             )
-            result = await self.redis.ping()
+            ping_result = self.redis.ping()
+            if hasattr(ping_result, "__await__"):
+                result = await ping_result
+            else:
+                result = ping_result
             if result:
                 logger.info("Connected to Redis for short-term memory")
         except Exception as e:

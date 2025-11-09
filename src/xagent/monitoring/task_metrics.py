@@ -163,7 +163,7 @@ def get_queue_stats() -> dict[str, int]:
         active = inspect.active()
         reserved = inspect.reserved()
 
-        stats = {}
+        stats: dict[str, int] = {}
         if active:
             for worker, tasks in active.items():
                 for task in tasks:
