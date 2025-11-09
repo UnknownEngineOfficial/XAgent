@@ -296,36 +296,36 @@ class MetricsCollector:
 
     # Agent metrics
 
-    def record_cognitive_loop(self, duration: float, status: str = "success"):
+    def record_cognitive_loop(self, duration: float, status: str = "success") -> None:
         """Record cognitive loop execution."""
         agent_cognitive_loop_duration.observe(duration)
         agent_cognitive_loop_total.labels(status=status).inc()
 
-    def record_goal_completion(self, duration: float, mode: str = "goal_oriented"):
+    def record_goal_completion(self, duration: float, mode: str = "goal_oriented") -> None:
         """Record goal completion time."""
         agent_goal_completion_time.labels(mode=mode).observe(duration)
 
-    def update_active_goals(self, pending: int = 0, in_progress: int = 0, blocked: int = 0):
+    def update_active_goals(self, pending: int = 0, in_progress: int = 0, blocked: int = 0) -> None:
         """Update active goals gauge."""
         agent_active_goals.labels(status="pending").set(pending)
         agent_active_goals.labels(status="in_progress").set(in_progress)
         agent_active_goals.labels(status="blocked").set(blocked)
 
-    def record_goal_created(self, mode: str, status: str):
+    def record_goal_created(self, mode: str, status: str) -> None:
         """Record goal creation and completion."""
         agent_goals_total.labels(mode=mode, status=status).inc()
 
-    def record_think_iteration(self, result: str = "action_taken"):
+    def record_think_iteration(self, result: str = "action_taken") -> None:
         """Record think/reasoning iteration."""
         agent_think_iterations.labels(result=result).inc()
 
-    def record_metacognition_check(self, trigger: str = "periodic"):
+    def record_metacognition_check(self, trigger: str = "periodic") -> None:
         """Record metacognition check."""
         agent_metacognition_checks.labels(trigger=trigger).inc()
 
     # API metrics
 
-    def start_api_request(self, request_id: str):
+    def start_api_request(self, request_id: str) -> None:
         """Start timing an API request."""
         self._cleanup_old_start_times()
         self.start_times[f"api_{request_id}"] = time.time()
@@ -336,7 +336,7 @@ class MetricsCollector:
         method: str,
         endpoint: str,
         status: int,
-    ):
+    ) -> None:
         """Record API request completion."""
         key = f"api_{request_id}"
         if key in self.start_times:
@@ -354,7 +354,7 @@ class MetricsCollector:
             status=str(status),
         ).inc()
 
-    def record_api_error(self, method: str, endpoint: str, error_type: str):
+    def record_api_error(self, method: str, endpoint: str, error_type: str) -> None:
         """Record API error."""
         api_errors_total.labels(
             method=method,
@@ -362,17 +362,17 @@ class MetricsCollector:
             error_type=error_type,
         ).inc()
 
-    def record_auth_attempt(self, result: str):
+    def record_auth_attempt(self, result: str) -> None:
         """Record authentication attempt."""
         api_auth_attempts_total.labels(result=result).inc()
 
-    def update_active_connections(self, count: int, protocol: str = "http"):
+    def update_active_connections(self, count: int, protocol: str = "http") -> None:
         """Update active connections gauge."""
         api_active_connections.labels(protocol=protocol).set(count)
 
     # Tool metrics
 
-    def start_tool_execution(self, tool_name: str, execution_id: str):
+    def start_tool_execution(self, tool_name: str, execution_id: str) -> None:
         """Start timing tool execution."""
         self._cleanup_old_start_times()
         self.start_times[f"tool_{execution_id}"] = time.time()
@@ -382,7 +382,7 @@ class MetricsCollector:
         tool_name: str,
         execution_id: str,
         status: str = "success",
-    ):
+    ) -> None:
         """Record tool execution completion."""
         key = f"tool_{execution_id}"
         if key in self.start_times:
@@ -398,14 +398,14 @@ class MetricsCollector:
             status=status,
         ).inc()
 
-    def record_tool_error(self, tool_name: str, error_type: str):
+    def record_tool_error(self, tool_name: str, error_type: str) -> None:
         """Record tool error."""
         tool_errors_total.labels(
             tool_name=tool_name,
             error_type=error_type,
         ).inc()
 
-    def update_tool_queue_size(self, size: int):
+    def update_tool_queue_size(self, size: int) -> None:
         """Update tool queue size."""
         tool_queue_size.set(size)
 
@@ -415,19 +415,19 @@ class MetricsCollector:
         self,
         short_term: int = 0,
         vector_store: int = 0,
-    ):
+    ) -> None:
         """Update memory statistics."""
         memory_short_term_entries.set(short_term)
         memory_vector_store_entries.set(vector_store)
 
-    def record_cache_access(self, hit: bool, cache_type: str = "redis"):
+    def record_cache_access(self, hit: bool, cache_type: str = "redis") -> None:
         """Record cache hit or miss."""
         if hit:
             memory_cache_hits_total.labels(cache_type=cache_type).inc()
         else:
             memory_cache_misses_total.labels(cache_type=cache_type).inc()
 
-    def record_memory_operation(self, operation: str, duration: float):
+    def record_memory_operation(self, operation: str, duration: float) -> None:
         """Record memory operation duration."""
         memory_operations_duration.labels(operation=operation).observe(duration)
 
@@ -439,7 +439,7 @@ class MetricsCollector:
         strategy: str,
         quality: str,
         num_steps: int,
-    ):
+    ) -> None:
         """Record planning operation."""
         planner_planning_duration.labels(strategy=strategy).observe(duration)
         planner_plans_total.labels(strategy=strategy, quality=quality).inc()
@@ -452,7 +452,7 @@ class MetricsCollector:
         cpu_percent: float | None = None,
         memory_bytes: int | None = None,
         disk_usage: dict[str, int] | None = None,
-    ):
+    ) -> None:
         """Update system resource metrics."""
         if cpu_percent is not None:
             system_cpu_usage.set(cpu_percent)
