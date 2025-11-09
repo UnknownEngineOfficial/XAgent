@@ -20,7 +20,7 @@ from sqlalchemy.orm import declarative_base, relationship
 Base = declarative_base()
 
 
-def utc_now():
+def utc_now() -> datetime:
     """Return current UTC time (timezone-aware)."""
     return datetime.now(timezone.utc)
 
