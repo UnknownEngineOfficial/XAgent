@@ -54,6 +54,81 @@ All optional enhancements have been implemented! ✅
 - ✅ **AlertManager**: Full alerting configuration with runbooks - COMPLETE
 - ✅ **Advanced Monitoring**: Enhanced with cache metrics and alerts - COMPLETE
 
+### Planned Features for Next Version
+
+#### Content Moderation Mode 📋 **NEW - Planned for v0.2.0**
+
+**Status**: 📋 Planned  
+**Priority**: P1 (High Priority)  
+**Aufwand**: 1-2 weeks
+
+**Feature Description**:
+A toggleable moderation system that allows switching between two operational modes:
+
+1. **Moderated Mode (Legal/Safe Mode)**:
+   - Content filtering enabled
+   - Strict policy enforcement via OPA
+   - Limited to safe, legal, and ethical operations
+   - Compliance with content guidelines
+   - Audit trail for all actions
+   
+2. **Unmoderated Mode (Full Freedom Mode)**:
+   - Content filtering disabled
+   - Minimal policy restrictions
+   - Maximum operational flexibility
+   - Capable of handling any topic/task
+   - Enhanced responsibility warning system
+   - Additional logging for accountability
+
+**Implementation Plan**:
+- [ ] Add `moderation_mode` configuration setting (values: "moderated", "unmoderated")
+- [ ] Extend OPA policies with moderation-aware rules
+- [ ] Implement content filtering middleware for moderated mode
+- [ ] Add mode-switching API endpoint with authentication
+- [ ] Create audit logging for mode changes
+- [ ] Add warning system for unmoderated mode activation
+- [ ] Implement topic/content classification system
+- [ ] Add comprehensive tests for both modes
+- [ ] Update documentation with usage guidelines and legal disclaimers
+
+**Configuration**:
+```python
+# In config.py
+moderation_mode: str = Field(
+    default="moderated", 
+    description="Content moderation mode: moderated or unmoderated"
+)
+moderation_strict: bool = Field(
+    default=True, 
+    description="Enable strict content filtering in moderated mode"
+)
+```
+
+**API Endpoint**:
+```
+POST /api/v1/agent/moderation-mode
+{
+  "mode": "unmoderated",
+  "reason": "Internal testing environment",
+  "acknowledged": true
+}
+```
+
+**Benefits**:
+- Flexibility for different use cases and environments
+- Compliance with regulations in production (moderated mode)
+- Freedom for research and development (unmoderated mode)
+- Clear separation of concerns and accountability
+- Audit trail for governance and compliance
+
+**Risks & Mitigations**:
+- **Risk**: Misuse in unmoderated mode
+  - **Mitigation**: Strong authentication, audit logging, clear ToS
+- **Risk**: Accidental mode switching
+  - **Mitigation**: Require explicit confirmation and admin privileges
+- **Risk**: Legal liability
+  - **Mitigation**: Comprehensive disclaimers, user acknowledgment, terms of service
+
 ## Vision
 
 Build an autonomous, self-thinking AI agent capable of:
