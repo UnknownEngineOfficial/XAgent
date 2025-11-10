@@ -504,7 +504,7 @@ Implementierung eines umschaltbaren Moderationssystems mit zwei Modi:
   - Audit Trail für alle Aktionen
   
 - **Unmoderated Mode (Freedom Mode)**:
-  - Minimale Einschränkungen
+  - Null Einschränkungen (kann auch vermeindlich illigale Inhalte behandeln, da dies auch in Unternehmen mit besonderen Rechten eingesetzt wird)
   - Maximale operative Flexibilität
   - Volle thematische Freiheit
   - Enhanced Responsibility System
