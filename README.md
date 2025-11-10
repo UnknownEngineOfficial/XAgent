@@ -395,6 +395,7 @@ while not stopped:
 
 - **Policy-basierte Sicherheit**: YAML-konfigurierbare Regeln
 - **Drei Aktionstypen**: `allow`, `block`, `require_confirmation`
+- **Rate Limiting**: 🆕 Distributed Redis-based rate limiting for API protection
 - **Sandboxing**: Isolierte Tool-Ausführung
 - **Audit-Trail**: Vollständiges Logging aller Aktionen
 
@@ -409,6 +410,8 @@ Detaillierte Dokumentation verfügbar:
 - **[QUICKSTART.md](docs/QUICKSTART.md)**: Schnellstart-Anleitung mit Beispielen
 - **[EMERGENT_INTELLIGENCE.md](docs/EMERGENT_INTELLIGENCE.md)**: 🆕 Emergent Intelligence & Learning Guide
 - **[OBSERVABILITY.md](docs/OBSERVABILITY.md)**: Monitoring, Metrics & Tracing Guide
+- **[RATE_LIMITING.md](docs/RATE_LIMITING.md)**: 🆕 Rate Limiting Guide (In-Memory & Distributed)
+- **[RATE_LIMITING_QUICKSTART.md](docs/RATE_LIMITING_QUICKSTART.md)**: 🆕 Rate Limiting Quick Start (5 Minutes)
 - **[INTEGRATION_ROADMAP.md](docs/INTEGRATION_ROADMAP.md)**: ✅ Open-Source Integrations-Roadmap (100% Complete)
 - **[CREWAI_EVALUATION.md](docs/CREWAI_EVALUATION.md)**: Phase 4 CrewAI Evaluation & Decision
 - **API Docs**: http://localhost:8000/docs (nach Start)

@@ -77,7 +77,34 @@ python examples/tool_execution_demo.py
 
 ## 📚 Other Available Examples
 
-### 1. Basic Usage (`basic_usage.py`)
+### 1. Rate Limiting (`rate_limiting_example.py`) 🆕
+
+**NEW!** Comprehensive rate limiting examples for API protection:
+- In-memory rate limiting (development)
+- Distributed Redis-based rate limiting (production)
+- Custom rate limiting logic per endpoint
+- Testing rate limiting behavior
+- Monitoring rate limit statistics
+
+**Features 5 Complete Examples**:
+1. In-memory rate limiting setup
+2. Distributed rate limiting with Redis
+3. Custom rate limiting per endpoint
+4. Testing and validation
+5. Monitoring and admin operations
+
+**Run**:
+```bash
+cd examples
+python rate_limiting_example.py inmemory    # Run in-memory version
+python rate_limiting_example.py distributed # Run distributed version
+python rate_limiting_example.py test        # Test rate limiting
+python rate_limiting_example.py monitor     # Monitor stats
+```
+
+**See also**: [Rate Limiting Quick Start Guide](../docs/RATE_LIMITING_QUICKSTART.md)
+
+### 2. Basic Usage (`basic_usage.py`)
 
 Demonstrates fundamental X-Agent operations:
 - Creating and initializing an agent
@@ -92,7 +119,7 @@ cd examples
 python basic_usage.py
 ```
 
-### 2. Goal Management (`goal_management.py`)
+### 3. Goal Management (`goal_management.py`)
 
 Shows advanced goal management:
 - Creating different goal types (goal-oriented vs continuous)
@@ -107,7 +134,7 @@ cd examples
 python goal_management.py
 ```
 
-### 3. Tool Server Usage (`tool_server_usage.py`)
+### 4. Tool Server Usage (`tool_server_usage.py`)
 
 Demonstrates tool system capabilities:
 - Creating custom tools
