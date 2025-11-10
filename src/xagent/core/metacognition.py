@@ -4,6 +4,7 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from xagent.core.learning import StrategyLearner
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -16,24 +17,32 @@ class MetaCognitionMonitor:
     Monitors agent performance, detects problems, and triggers corrections.
     """
 
-    def __init__(self, window_size: int = 100) -> None:
+    def __init__(self, window_size: int = 100, enable_learning: bool = True) -> None:
         """
         Initialize meta-cognition monitor.
 
         Args:
             window_size: Size of performance history window
+            enable_learning: Whether to enable strategy learning (emergent intelligence)
         """
         self.window_size = window_size
         self.performance_history: deque[dict[str, Any]] = deque(maxlen=window_size)
         self.error_patterns: dict[str, int] = {}
         self.loop_detection: dict[str, list[datetime]] = {}
+        
+        # Emergent intelligence: Strategy learning
+        self.enable_learning = enable_learning
+        self.strategy_learner: StrategyLearner | None = None
+        if enable_learning:
+            self.strategy_learner = StrategyLearner()
 
-    def evaluate(self, result: dict[str, Any]) -> dict[str, Any]:
+    def evaluate(self, result: dict[str, Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Evaluate an action result.
 
         Args:
             result: Action result to evaluate
+            context: Optional context for learning
 
         Returns:
             Evaluation metrics
@@ -49,11 +58,14 @@ class MetaCognitionMonitor:
         }
 
         # Add to performance history
+        success = result.get("success", False)
+        action_type = result.get("plan", {}).get("type")
+        
         self.performance_history.append(
             {
                 "timestamp": datetime.now(timezone.utc),
-                "success": result.get("success", False),
-                "action_type": result.get("plan", {}).get("type"),
+                "success": success,
+                "action_type": action_type,
             }
         )
 
@@ -61,6 +73,19 @@ class MetaCognitionMonitor:
         if self.performance_history:
             successes = sum(1 for r in self.performance_history if r.get("success"))
             evaluation["success_rate"] = successes / len(self.performance_history)
+        
+        # Record strategy execution for learning (emergent intelligence)
+        if self.strategy_learner and action_type and context:
+            quality_score = result.get("quality_score", 0.5)
+            duration = result.get("duration", 0.0)
+            
+            self.strategy_learner.record_strategy_execution(
+                strategy_type=action_type,
+                context=context,
+                success=success,
+                duration=duration,
+                quality_score=quality_score,
+            )
 
         # Detect error patterns
         if not result.get("success"):
@@ -135,9 +160,47 @@ class MetaCognitionMonitor:
             "common_errors": [{"error": error, "count": count} for error, count in common_errors],
         }
 
+    def get_strategy_recommendation(
+        self, context: dict[str, Any], available_strategies: list[str] | None = None
+    ) -> str | None:
+        """
+        Get recommended strategy based on learned patterns.
+        
+        Args:
+            context: Current context
+            available_strategies: Optional list of available strategies
+        
+        Returns:
+            Recommended strategy or None
+        """
+        if not self.strategy_learner:
+            return None
+        
+        return self.strategy_learner.get_best_strategy(context, available_strategies)
+
+    def get_learning_insights(self) -> dict[str, Any]:
+        """
+        Get insights from strategy learning.
+        
+        Returns:
+            Dictionary containing learning insights
+        """
+        if not self.strategy_learner:
+            return {"learning_enabled": False}
+        
+        return {
+            "learning_enabled": True,
+            "strategy_statistics": self.strategy_learner.get_strategy_statistics(),
+            "identified_patterns": self.strategy_learner.identify_patterns(),
+        }
+
     def reset_monitoring(self) -> None:
         """Reset monitoring state."""
         self.performance_history.clear()
         self.error_patterns.clear()
         self.loop_detection.clear()
+        
+        if self.strategy_learner:
+            self.strategy_learner.reset_learning()
+        
         logger.info("Meta-cognition monitoring reset")

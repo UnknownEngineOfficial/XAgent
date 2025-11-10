@@ -228,3 +228,115 @@ def test_evaluation_without_plan():
     # Should not crash, should handle gracefully
     assert "success_rate" in evaluation
     assert evaluation["success_rate"] >= 0.0
+
+
+def test_strategy_learning_integration():
+    """Test strategy learning integration."""
+    monitor = MetaCognitionMonitor(enable_learning=True)
+    
+    assert monitor.strategy_learner is not None
+    
+    context = {"active_goal": {"complexity": "high"}}
+    result = {
+        "success": True,
+        "plan": {"type": "decompose"},
+        "quality_score": 0.8,
+        "duration": 1.0,
+    }
+    
+    evaluation = monitor.evaluate(result, context=context)
+    
+    # Check that learning was recorded
+    stats = monitor.strategy_learner.strategy_stats["decompose"]
+    assert stats["attempts"] == 1
+    assert stats["successes"] == 1
+
+
+def test_strategy_learning_disabled():
+    """Test with learning disabled."""
+    monitor = MetaCognitionMonitor(enable_learning=False)
+    
+    assert monitor.strategy_learner is None
+    
+    context = {"active_goal": {"complexity": "high"}}
+    result = {
+        "success": True,
+        "plan": {"type": "decompose"},
+    }
+    
+    # Should not crash even without learner
+    evaluation = monitor.evaluate(result, context=context)
+    assert "success_rate" in evaluation
+
+
+def test_get_strategy_recommendation():
+    """Test getting strategy recommendations."""
+    monitor = MetaCognitionMonitor(enable_learning=True)
+    
+    context = {"active_goal": {"complexity": "high"}}
+    
+    # Record some strategies
+    for _ in range(10):
+        result = {
+            "success": True,
+            "plan": {"type": "decompose"},
+            "quality_score": 0.9,
+        }
+        monitor.evaluate(result, context=context)
+    
+    # Get recommendation
+    recommended = monitor.get_strategy_recommendation(context)
+    assert recommended == "decompose"
+
+
+def test_get_learning_insights():
+    """Test getting learning insights."""
+    monitor = MetaCognitionMonitor(enable_learning=True)
+    
+    context = {"active_goal": {"complexity": "medium"}}
+    
+    # Record some executions
+    for _ in range(5):
+        result = {
+            "success": True,
+            "plan": {"type": "think"},
+            "quality_score": 0.7,
+        }
+        monitor.evaluate(result, context=context)
+    
+    insights = monitor.get_learning_insights()
+    
+    assert insights["learning_enabled"] is True
+    assert "strategy_statistics" in insights
+    assert "identified_patterns" in insights
+    assert "think" in insights["strategy_statistics"]
+
+
+def test_get_learning_insights_disabled():
+    """Test getting insights when learning is disabled."""
+    monitor = MetaCognitionMonitor(enable_learning=False)
+    
+    insights = monitor.get_learning_insights()
+    
+    assert insights["learning_enabled"] is False
+
+
+def test_reset_with_learning():
+    """Test reset with learning enabled."""
+    monitor = MetaCognitionMonitor(enable_learning=True)
+    
+    context = {"active_goal": {}}
+    result = {"success": True, "plan": {"type": "think"}}
+    
+    monitor.evaluate(result, context=context)
+    
+    # Verify data exists
+    assert len(monitor.performance_history) > 0
+    assert len(monitor.strategy_learner.strategy_stats) > 0
+    
+    # Reset
+    monitor.reset_monitoring()
+    
+    # Verify both monitoring and learning data are cleared
+    assert len(monitor.performance_history) == 0
+    assert len(monitor.strategy_learner.strategy_stats) == 0
