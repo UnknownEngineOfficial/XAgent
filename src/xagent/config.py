@@ -90,6 +90,10 @@ class Settings(BaseSettings):
     )
     max_iterations: int = Field(default=100, description="Maximum iterations per task")
     loop_delay_seconds: float = Field(default=1.0, description="Delay between loop iterations")
+    max_mini_agents: int = Field(
+        default=3, 
+        description="Maximum number of concurrent mini-agents for subtask execution"
+    )
 
     # Planning Configuration
     use_langgraph_planner: bool = Field(
