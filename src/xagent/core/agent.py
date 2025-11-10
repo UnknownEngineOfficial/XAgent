@@ -4,6 +4,7 @@ import asyncio
 from typing import Any, Union
 
 from xagent.config import Settings
+from xagent.core.agent_roles import AgentCoordinator
 from xagent.core.cognitive_loop import CognitiveLoop
 from xagent.core.executor import Executor
 from xagent.core.goal_engine import GoalEngine, GoalMode, GoalStatus
@@ -22,6 +23,11 @@ class XAgent:
 
     Self-thinking, decision-making agent that works continuously
     until explicitly stopped or goal is achieved.
+    
+    Uses limited internal agents for coordination:
+    - Main Worker Agent: Handles primary execution
+    - User Interface Agent: Manages user communication
+    - Mini-Agents: Temporary workers for subtasks (limited number)
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
@@ -35,6 +41,11 @@ class XAgent:
 
         # Load settings
         self.settings = settings or Settings()
+
+        # Initialize agent coordinator for internal multi-agent coordination
+        max_mini_agents = getattr(self.settings, 'max_mini_agents', 3)
+        self.agent_coordinator = AgentCoordinator(max_mini_agents=max_mini_agents)
+        logger.info(f"Initialized agent coordinator with max {max_mini_agents} mini-agents")
 
         # Initialize core components
         self.goal_engine = GoalEngine()
@@ -178,6 +189,7 @@ class XAgent:
                 "completed": len(self.goal_engine.list_goals(status=GoalStatus.COMPLETED)),
             },
             "performance": self.metacognition.get_performance_summary(),
+            "agents": self.agent_coordinator.get_status(),
         }
 
         active_goal = self.goal_engine.get_active_goal()
@@ -204,6 +216,57 @@ class XAgent:
 
         logger.info(f"Created continuous task: {goal.id}")
         return goal.id
+    
+    async def spawn_subtask_agent(self, task_description: str, parent_goal_id: str | None = None) -> str | None:
+        """
+        Spawn a mini-agent for parallel subtask execution.
+        
+        Args:
+            task_description: Description of the subtask
+            parent_goal_id: Optional parent goal ID
+            
+        Returns:
+            Mini-agent ID if spawned successfully, None if limit reached
+        """
+        # Get parent agent (main worker)
+        parent_agent = self.agent_coordinator.get_main_worker()
+        
+        # Spawn mini-agent
+        mini_agent = self.agent_coordinator.spawn_mini_agent(
+            task_description=task_description,
+            parent_agent_id=parent_agent.id
+        )
+        
+        if not mini_agent:
+            logger.warning("Cannot spawn mini-agent: limit reached")
+            return None
+        
+        # Create a goal for the mini-agent
+        goal = self.goal_engine.create_goal(
+            description=task_description,
+            mode=GoalMode.GOAL_ORIENTED,
+            priority=5,
+            parent_id=parent_goal_id,
+            metadata={"agent_id": mini_agent.id, "agent_role": "mini_agent"}
+        )
+        
+        logger.info(f"Spawned mini-agent {mini_agent.id} for subtask: {task_description}")
+        return mini_agent.id
+    
+    async def terminate_subtask_agent(self, agent_id: str) -> bool:
+        """
+        Terminate a mini-agent after subtask completion.
+        
+        Args:
+            agent_id: ID of the mini-agent
+            
+        Returns:
+            True if terminated successfully, False otherwise
+        """
+        result = self.agent_coordinator.terminate_mini_agent(agent_id)
+        if result:
+            logger.info(f"Terminated mini-agent: {agent_id}")
+        return result
 
 
 async def main() -> None:
