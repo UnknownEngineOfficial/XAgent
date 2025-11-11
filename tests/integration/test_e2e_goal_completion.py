@@ -82,7 +82,7 @@ async def test_simple_goal_completion_workflow(cognitive_loop, goal_engine):
     cognitive_loop.max_iterations = 3
 
     # Start cognitive loop (will run a few iterations)
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
 
     # Wait for some iterations
     await asyncio.sleep(1.0)
@@ -142,7 +142,7 @@ async def test_hierarchical_goal_completion_workflow(cognitive_loop, goal_engine
     goal_engine.set_active_goal(child_goal_1.id)
     cognitive_loop.max_iterations = 2
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.5)
     await cognitive_loop.stop()
 
@@ -159,7 +159,7 @@ async def test_hierarchical_goal_completion_workflow(cognitive_loop, goal_engine
     cognitive_loop.running = False  # Reset
     cognitive_loop.iteration_count = 0
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.5)
     await cognitive_loop.stop()
 
@@ -198,7 +198,7 @@ async def test_continuous_goal_workflow(cognitive_loop, goal_engine):
     # Start with limited iterations (continuous would run forever)
     cognitive_loop.max_iterations = 5
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
 
     # Let it run for a bit
     await asyncio.sleep(1.0)
@@ -245,7 +245,7 @@ async def test_multi_goal_prioritization_workflow(cognitive_loop, goal_engine):
     # Don't set active goal - let cognitive loop choose based on priority
     cognitive_loop.max_iterations = 2
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
 
     # Let it run briefly
     await asyncio.sleep(0.5)
@@ -292,7 +292,7 @@ async def test_goal_replanning_on_failure(cognitive_loop, goal_engine, executor)
     # Run cognitive loop with limited iterations
     cognitive_loop.max_iterations = 3
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.8)
     await cognitive_loop.stop()
 
@@ -339,7 +339,7 @@ async def test_goal_with_perception_inputs(cognitive_loop, goal_engine):
     # Run cognitive loop
     cognitive_loop.max_iterations = 4
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(1.0)
     await cognitive_loop.stop()
 
@@ -372,7 +372,7 @@ async def test_metrics_tracking_during_goal_completion(cognitive_loop, goal_engi
     # Run cognitive loop
     cognitive_loop.max_iterations = 3
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.8)
     await cognitive_loop.stop()
 
@@ -407,7 +407,7 @@ async def test_goal_completion_with_memory_persistence(
     # Run cognitive loop
     cognitive_loop.max_iterations = 2
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.6)
     await cognitive_loop.stop()
 

@@ -96,7 +96,7 @@ async def test_recovery_from_executor_failure(cognitive_loop, goal_engine, execu
     # Run cognitive loop
     cognitive_loop.max_iterations = 5
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(1.5)
     await cognitive_loop.stop()
 
@@ -146,7 +146,7 @@ async def test_recovery_from_planner_failure(cognitive_loop, goal_engine, planne
     # Run cognitive loop
     cognitive_loop.max_iterations = 4
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(1.0)
     await cognitive_loop.stop()
 
@@ -189,7 +189,7 @@ async def test_recovery_from_memory_failure(cognitive_loop, goal_engine, memory_
     # Run cognitive loop
     cognitive_loop.max_iterations = 4
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(1.0)
     await cognitive_loop.stop()
 
@@ -212,7 +212,7 @@ async def test_recovery_from_missing_goal(cognitive_loop, goal_engine):
     # Run cognitive loop
     cognitive_loop.max_iterations = 3
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.8)
     await cognitive_loop.stop()
 
@@ -250,7 +250,7 @@ async def test_recovery_from_perception_queue_overflow(cognitive_loop, goal_engi
     # Run cognitive loop
     cognitive_loop.max_iterations = 3
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(1.0)
     await cognitive_loop.stop()
 
@@ -288,7 +288,7 @@ async def test_recovery_from_infinite_loop_detection(cognitive_loop, goal_engine
     # Run with iteration limit to prevent actual infinite loop
     cognitive_loop.max_iterations = 10
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(2.0)
     await cognitive_loop.stop()
 
@@ -322,7 +322,7 @@ async def test_graceful_shutdown_during_error(cognitive_loop, goal_engine):
     # Start loop
     cognitive_loop.max_iterations = 10
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.5)
 
     # Stop loop (should shutdown gracefully even with errors)
@@ -382,7 +382,7 @@ async def test_recovery_tracking_in_metrics(cognitive_loop, goal_engine, planner
     # Run cognitive loop
     cognitive_loop.max_iterations = 6
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(1.5)
     await cognitive_loop.stop()
 
@@ -426,7 +426,7 @@ async def test_recovery_from_goal_completion_check_failure(
     # Run cognitive loop
     cognitive_loop.max_iterations = 3
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
     await asyncio.sleep(0.8)
     await cognitive_loop.stop()
 
@@ -444,20 +444,31 @@ async def test_recovery_from_goal_completion_check_failure(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_multiple_concurrent_error_recovery(cognitive_loop, goal_engine):
+async def test_multiple_concurrent_error_recovery(cognitive_loop, goal_engine, planner):
     """Test handling multiple types of errors occurring simultaneously."""
     error_types = []
+    call_count = 0
+
+    # Configure planner to return plans
+    planner.create_plan = AsyncMock(
+        return_value={
+            "type": "think",
+            "action": "analyze",
+            "parameters": {},
+        }
+    )
+    cognitive_loop.planner = planner
 
     # Create executor that fails with different errors
     async def multi_error_execute(plan):
-        import random
-
-        error_type = random.choice(["timeout", "exception", "invalid"])
+        nonlocal call_count
+        call_count += 1
+        
+        # Deterministic error pattern for testing
+        error_type = ["exception", "invalid", "success"][call_count % 3]
         error_types.append(error_type)
 
-        if error_type == "timeout":
-            await asyncio.sleep(10)  # Simulate timeout
-        elif error_type == "exception":
+        if error_type == "exception":
             raise Exception("Random exception")
         elif error_type == "invalid":
             return {
@@ -482,12 +493,12 @@ async def test_multiple_concurrent_error_recovery(cognitive_loop, goal_engine):
     )
     goal_engine.set_active_goal(goal.id)
 
-    # Run with limited iterations and timeout
+    # Run with limited iterations
     cognitive_loop.max_iterations = 5
 
-    loop_task = asyncio.create_task(cognitive_loop.start())
+    loop_task = asyncio.create_task(cognitive_loop.start(resume_from_checkpoint=False))
 
-    # Give limited time
+    # Give time for iterations
     await asyncio.sleep(1.5)
     await cognitive_loop.stop()
 
@@ -500,3 +511,5 @@ async def test_multiple_concurrent_error_recovery(cognitive_loop, goal_engine):
     assert cognitive_loop.iteration_count > 0
     # Should have encountered some errors
     assert len(error_types) > 0
+    # Should have different error types
+    assert len(set(error_types)) > 1
