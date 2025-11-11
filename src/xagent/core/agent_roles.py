@@ -10,14 +10,16 @@ class AgentRole(str, Enum):
     """Agent roles for internal coordination.
     
     XAgent uses a limited number of internal agents for specific purposes:
-    - MAIN_WORKER: Primary execution agent for tasks
-    - USER_INTERFACE: Dedicated agent for user communication
-    - MINI_AGENT: Temporary worker for subtasks (spawned as needed)
+    - WORKER: Primary execution agent for tasks and actions
+    - PLANNER: Strategic planning and goal decomposition
+    - CHAT: User communication and interaction
+    - SUB_AGENT: Temporary worker for subtasks (spawned as needed, max 5-7)
     """
     
-    MAIN_WORKER = "main_worker"
-    USER_INTERFACE = "user_interface"
-    MINI_AGENT = "mini_agent"
+    WORKER = "worker"
+    PLANNER = "planner"
+    CHAT = "chat"
+    SUB_AGENT = "sub_agent"
 
 
 @dataclass
@@ -25,7 +27,7 @@ class AgentInstance:
     """Represents an agent instance within XAgent."""
     
     id: str = field(default_factory=lambda: f"agent_{str(uuid.uuid4())[:8]}")
-    role: AgentRole = AgentRole.MAIN_WORKER
+    role: AgentRole = AgentRole.WORKER
     active: bool = True
     current_task: Optional[str] = None
     parent_agent_id: Optional[str] = None
@@ -47,69 +49,77 @@ class AgentCoordinator:
     """Coordinates limited internal agents in XAgent.
     
     Manages:
-    - 1 Main Worker Agent (primary execution)
-    - 1 User Interface Agent (user communication)
-    - N Mini-Agents (temporary subtask workers, limited by config)
+    - 1 Worker Agent (primary execution and action)
+    - 1 Planner Agent (strategic planning and goal decomposition)
+    - 1 Chat Agent (user communication and interaction)
+    - N Sub-Agents (temporary subtask workers, max 5-7, configurable)
     """
     
-    def __init__(self, max_mini_agents: int = 3):
+    def __init__(self, max_sub_agents: int = 5):
         """Initialize agent coordinator.
         
         Args:
-            max_mini_agents: Maximum number of concurrent mini-agents (default: 3)
+            max_sub_agents: Maximum number of concurrent sub-agents (default: 5, max recommended: 7)
         """
-        self.max_mini_agents = max_mini_agents
+        self.max_sub_agents = max_sub_agents
         self.agents: dict[str, AgentInstance] = {}
         
         # Initialize core agents
         self._initialize_core_agents()
     
     def _initialize_core_agents(self) -> None:
-        """Initialize the core agents (worker and user interface)."""
-        # Main worker agent
+        """Initialize the core agents (worker, planner, and chat)."""
+        # Worker agent - primary execution
         worker = AgentInstance(
-            id="main_worker",
-            role=AgentRole.MAIN_WORKER,
+            id="worker",
+            role=AgentRole.WORKER,
         )
         self.agents[worker.id] = worker
         
-        # User interface agent
-        ui_agent = AgentInstance(
-            id="user_interface",
-            role=AgentRole.USER_INTERFACE,
+        # Planner agent - strategic planning
+        planner = AgentInstance(
+            id="planner",
+            role=AgentRole.PLANNER,
         )
-        self.agents[ui_agent.id] = ui_agent
+        self.agents[planner.id] = planner
+        
+        # Chat agent - user communication
+        chat_agent = AgentInstance(
+            id="chat",
+            role=AgentRole.CHAT,
+        )
+        self.agents[chat_agent.id] = chat_agent
     
-    def spawn_mini_agent(self, task_description: str, parent_agent_id: str) -> Optional[AgentInstance]:
-        """Spawn a temporary mini-agent for subtask execution.
+    def spawn_sub_agent(self, task_description: str, parent_agent_id: str) -> Optional[AgentInstance]:
+        """Spawn a temporary sub-agent for subtask execution.
         
         Args:
             task_description: Description of the subtask
-            parent_agent_id: ID of the parent agent spawning this mini-agent
+            parent_agent_id: ID of the parent agent spawning this sub-agent
             
         Returns:
             AgentInstance if successfully spawned, None if limit reached
         """
         # Check if we've reached the limit
-        active_mini_agents = self.get_active_mini_agents()
-        if len(active_mini_agents) >= self.max_mini_agents:
+        active_sub_agents = self.get_active_sub_agents()
+        if len(active_sub_agents) >= self.max_sub_agents:
             return None
         
-        # Create mini-agent
-        mini_agent = AgentInstance(
-            role=AgentRole.MINI_AGENT,
+        # Create sub-agent
+        sub_agent = AgentInstance(
+            role=AgentRole.SUB_AGENT,
             current_task=task_description,
             parent_agent_id=parent_agent_id,
         )
         
-        self.agents[mini_agent.id] = mini_agent
-        return mini_agent
+        self.agents[sub_agent.id] = sub_agent
+        return sub_agent
     
-    def terminate_mini_agent(self, agent_id: str) -> bool:
-        """Terminate a mini-agent after subtask completion.
+    def terminate_sub_agent(self, agent_id: str) -> bool:
+        """Terminate a sub-agent after subtask completion.
         
         Args:
-            agent_id: ID of the mini-agent to terminate
+            agent_id: ID of the sub-agent to terminate
             
         Returns:
             True if successfully terminated, False otherwise
@@ -118,7 +128,7 @@ class AgentCoordinator:
             return False
         
         agent = self.agents[agent_id]
-        if agent.role != AgentRole.MINI_AGENT:
+        if agent.role != AgentRole.SUB_AGENT:
             return False
         
         agent.active = False
@@ -129,19 +139,23 @@ class AgentCoordinator:
         """Get agent by ID."""
         return self.agents.get(agent_id)
     
-    def get_main_worker(self) -> AgentInstance:
-        """Get the main worker agent."""
-        return self.agents["main_worker"]
+    def get_worker(self) -> AgentInstance:
+        """Get the worker agent."""
+        return self.agents["worker"]
     
-    def get_user_interface_agent(self) -> AgentInstance:
-        """Get the user interface agent."""
-        return self.agents["user_interface"]
+    def get_planner(self) -> AgentInstance:
+        """Get the planner agent."""
+        return self.agents["planner"]
     
-    def get_active_mini_agents(self) -> list[AgentInstance]:
-        """Get all active mini-agents."""
+    def get_chat_agent(self) -> AgentInstance:
+        """Get the chat agent."""
+        return self.agents["chat"]
+    
+    def get_active_sub_agents(self) -> list[AgentInstance]:
+        """Get all active sub-agents."""
         return [
             agent for agent in self.agents.values()
-            if agent.role == AgentRole.MINI_AGENT and agent.active
+            if agent.role == AgentRole.SUB_AGENT and agent.active
         ]
     
     def get_all_agents(self) -> list[AgentInstance]:
@@ -167,9 +181,10 @@ class AgentCoordinator:
     def get_status(self) -> dict:
         """Get status of all agents."""
         return {
-            "main_worker": self.get_main_worker().to_dict(),
-            "user_interface": self.get_user_interface_agent().to_dict(),
-            "mini_agents": [agent.to_dict() for agent in self.get_active_mini_agents()],
-            "mini_agents_count": len(self.get_active_mini_agents()),
-            "mini_agents_limit": self.max_mini_agents,
+            "worker": self.get_worker().to_dict(),
+            "planner": self.get_planner().to_dict(),
+            "chat": self.get_chat_agent().to_dict(),
+            "sub_agents": [agent.to_dict() for agent in self.get_active_sub_agents()],
+            "sub_agents_count": len(self.get_active_sub_agents()),
+            "sub_agents_limit": self.max_sub_agents,
         }

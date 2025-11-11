@@ -25,9 +25,10 @@ class XAgent:
     until explicitly stopped or goal is achieved.
     
     Uses limited internal agents for coordination:
-    - Main Worker Agent: Handles primary execution
-    - User Interface Agent: Manages user communication
-    - Mini-Agents: Temporary workers for subtasks (limited number)
+    - Worker Agent: Handles primary execution and actions
+    - Planner Agent: Strategic planning and goal decomposition
+    - Chat Agent: Manages user communication and interaction
+    - Sub-Agents: Temporary workers for subtasks (max 5-7, configurable)
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
@@ -43,9 +44,9 @@ class XAgent:
         self.settings = settings or Settings()
 
         # Initialize agent coordinator for internal multi-agent coordination
-        max_mini_agents = getattr(self.settings, 'max_mini_agents', 3)
-        self.agent_coordinator = AgentCoordinator(max_mini_agents=max_mini_agents)
-        logger.info(f"Initialized agent coordinator with max {max_mini_agents} mini-agents")
+        max_sub_agents = getattr(self.settings, 'max_sub_agents', 5)
+        self.agent_coordinator = AgentCoordinator(max_sub_agents=max_sub_agents)
+        logger.info(f"Initialized agent coordinator with max {max_sub_agents} sub-agents")
 
         # Initialize core components
         self.goal_engine = GoalEngine()

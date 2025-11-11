@@ -9,9 +9,10 @@ class TestAgentRole:
     
     def test_agent_roles_exist(self):
         """Test that all required roles exist."""
-        assert AgentRole.MAIN_WORKER == "main_worker"
-        assert AgentRole.USER_INTERFACE == "user_interface"
-        assert AgentRole.MINI_AGENT == "mini_agent"
+        assert AgentRole.WORKER == "worker"
+        assert AgentRole.PLANNER == "planner"
+        assert AgentRole.CHAT == "chat"
+        assert AgentRole.SUB_AGENT == "sub_agent"
 
 
 class TestAgentInstance:
@@ -19,10 +20,10 @@ class TestAgentInstance:
     
     def test_create_agent_instance(self):
         """Test creating an agent instance."""
-        agent = AgentInstance(role=AgentRole.MAIN_WORKER)
+        agent = AgentInstance(role=AgentRole.WORKER)
         
         assert agent.id is not None
-        assert agent.role == AgentRole.MAIN_WORKER
+        assert agent.role == AgentRole.WORKER
         assert agent.active is True
         assert agent.current_task is None
         assert agent.parent_agent_id is None
@@ -30,14 +31,14 @@ class TestAgentInstance:
     def test_agent_instance_to_dict(self):
         """Test converting agent instance to dict."""
         agent = AgentInstance(
-            role=AgentRole.MINI_AGENT,
+            role=AgentRole.SUB_AGENT,
             current_task="Test task",
             parent_agent_id="parent_123"
         )
         
         data = agent.to_dict()
         
-        assert data["role"] == "mini_agent"
+        assert data["role"] == "sub_agent"
         assert data["current_task"] == "Test task"
         assert data["parent_agent_id"] == "parent_123"
         assert data["active"] is True
@@ -48,64 +49,69 @@ class TestAgentCoordinator:
     
     def test_initialization(self):
         """Test coordinator initialization."""
-        coordinator = AgentCoordinator(max_mini_agents=5)
+        coordinator = AgentCoordinator(max_sub_agents=5)
         
-        assert coordinator.max_mini_agents == 5
-        assert len(coordinator.get_all_agents()) == 2  # worker + UI
-        assert coordinator.get_main_worker() is not None
-        assert coordinator.get_user_interface_agent() is not None
+        assert coordinator.max_sub_agents == 5
+        assert len(coordinator.get_all_agents()) == 3  # worker + planner + chat
+        assert coordinator.get_worker() is not None
+        assert coordinator.get_planner() is not None
+        assert coordinator.get_chat_agent() is not None
     
     def test_core_agents_initialized(self):
         """Test that core agents are initialized."""
         coordinator = AgentCoordinator()
         
-        worker = coordinator.get_main_worker()
-        assert worker.id == "main_worker"
-        assert worker.role == AgentRole.MAIN_WORKER
+        worker = coordinator.get_worker()
+        assert worker.id == "worker"
+        assert worker.role == AgentRole.WORKER
         
-        ui = coordinator.get_user_interface_agent()
-        assert ui.id == "user_interface"
-        assert ui.role == AgentRole.USER_INTERFACE
+        planner = coordinator.get_planner()
+        assert planner.id == "planner"
+        assert planner.role == AgentRole.PLANNER
+        
+        chat = coordinator.get_chat_agent()
+        assert chat.id == "chat"
+        assert chat.role == AgentRole.CHAT
     
-    def test_spawn_mini_agent(self):
-        """Test spawning a mini-agent."""
-        coordinator = AgentCoordinator(max_mini_agents=3)
+    def test_spawn_sub_agent(self):
+        """Test spawning a sub-agent."""
+        coordinator = AgentCoordinator(max_sub_agents=3)
         
-        mini = coordinator.spawn_mini_agent(
+        sub = coordinator.spawn_sub_agent(
             task_description="Process data",
-            parent_agent_id="main_worker"
+            parent_agent_id="worker"
         )
         
-        assert mini is not None
-        assert mini.role == AgentRole.MINI_AGENT
-        assert mini.current_task == "Process data"
-        assert mini.parent_agent_id == "main_worker"
-        assert mini.active is True
+        assert sub is not None
+        assert sub.role == AgentRole.SUB_AGENT
+        assert sub.current_task == "Process data"
+        assert sub.parent_agent_id == "worker"
+        assert sub.active is True
     
-    def test_spawn_mini_agent_limit(self):
-        """Test mini-agent spawn limit."""
-        coordinator = AgentCoordinator(max_mini_agents=2)
+    def test_spawn_sub_agent_limit(self):
+        """Test sub-agent spawn limit."""
+        coordinator = AgentCoordinator(max_sub_agents=2)
         
-        # Spawn first two mini-agents
-        mini1 = coordinator.spawn_mini_agent("Task 1", "main_worker")
-        mini2 = coordinator.spawn_mini_agent("Task 2", "main_worker")
+        # Spawn first two sub-agents
+        sub1 = coordinator.spawn_sub_agent("Task 1", "worker")
+        sub2 = coordinator.spawn_sub_agent("Task 2", "worker")
         
-        assert mini1 is not None
-        assert mini2 is not None
+        assert sub1 is not None
+        assert sub2 is not None
         
         # Try to spawn third - should fail
-        mini3 = coordinator.spawn_mini_agent("Task 3", "main_worker")
-        assert mini3 is None
+        sub3 = coordinator.spawn_sub_agent("Task 3", "worker")
+        assert sub3 is None
     
-    def test_terminate_mini_agent(self):
-        """Test terminating a mini-agent."""
+    def test_terminate_sub_agent(self):
+        """Test terminating a sub-agent."""
         coordinator = AgentCoordinator()
         
-        mini = coordinator.spawn_mini_agent("Task", "main_worker")
-        assert mini is not None
+        sub = coordinator.spawn_sub_agent("Task", "worker")
+        assert sub is not None
         
-        agent_id = mini.id
-        result = coordinator.terminate_mini_agent(agent_id)
+        agent_id = sub.id
+        result = coordinator.terminate_sub_agent(agent_id)
         
         assert result is True
         assert coordinator.get_agent(agent_id) is None
@@ -114,41 +120,44 @@ class TestAgentCoordinator:
         """Test terminating non-existent agent."""
         coordinator = AgentCoordinator()
         
-        result = coordinator.terminate_mini_agent("nonexistent")
+        result = coordinator.terminate_sub_agent("nonexistent")
         assert result is False
     
     def test_terminate_core_agent_fails(self):
         """Test that core agents cannot be terminated."""
         coordinator = AgentCoordinator()
         
-        result = coordinator.terminate_mini_agent("main_worker")
+        result = coordinator.terminate_sub_agent("worker")
         assert result is False
         
-        result = coordinator.terminate_mini_agent("user_interface")
+        result = coordinator.terminate_sub_agent("planner")
+        assert result is False
+        
+        result = coordinator.terminate_sub_agent("chat")
         assert result is False
     
-    def test_get_active_mini_agents(self):
-        """Test getting active mini-agents."""
-        coordinator = AgentCoordinator(max_mini_agents=3)
+    def test_get_active_sub_agents(self):
+        """Test getting active sub-agents."""
+        coordinator = AgentCoordinator(max_sub_agents=3)
         
-        coordinator.spawn_mini_agent("Task 1", "main_worker")
-        coordinator.spawn_mini_agent("Task 2", "main_worker")
+        coordinator.spawn_sub_agent("Task 1", "worker")
+        coordinator.spawn_sub_agent("Task 2", "worker")
         
-        mini_agents = coordinator.get_active_mini_agents()
-        assert len(mini_agents) == 2
-        assert all(agent.role == AgentRole.MINI_AGENT for agent in mini_agents)
+        sub_agents = coordinator.get_active_sub_agents()
+        assert len(sub_agents) == 2
+        assert all(agent.role == AgentRole.SUB_AGENT for agent in sub_agents)
     
     def test_update_agent_task(self):
         """Test updating agent task."""
         coordinator = AgentCoordinator()
         
-        mini = coordinator.spawn_mini_agent("Original task", "main_worker")
-        assert mini is not None
+        sub = coordinator.spawn_sub_agent("Original task", "worker")
+        assert sub is not None
         
-        result = coordinator.update_agent_task(mini.id, "New task")
+        result = coordinator.update_agent_task(sub.id, "New task")
         assert result is True
         
-        updated = coordinator.get_agent(mini.id)
+        updated = coordinator.get_agent(sub.id)
         assert updated is not None
         assert updated.current_task == "New task"
     
@@ -161,40 +170,41 @@ class TestAgentCoordinator:
     
     def test_get_status(self):
         """Test getting coordinator status."""
-        coordinator = AgentCoordinator(max_mini_agents=3)
+        coordinator = AgentCoordinator(max_sub_agents=3)
         
-        coordinator.spawn_mini_agent("Task 1", "main_worker")
-        coordinator.spawn_mini_agent("Task 2", "main_worker")
+        coordinator.spawn_sub_agent("Task 1", "worker")
+        coordinator.spawn_sub_agent("Task 2", "worker")
         
         status = coordinator.get_status()
         
-        assert "main_worker" in status
-        assert "user_interface" in status
-        assert "mini_agents" in status
-        assert status["mini_agents_count"] == 2
-        assert status["mini_agents_limit"] == 3
-        assert len(status["mini_agents"]) == 2
+        assert "worker" in status
+        assert "planner" in status
+        assert "chat" in status
+        assert "sub_agents" in status
+        assert status["sub_agents_count"] == 2
+        assert status["sub_agents_limit"] == 3
+        assert len(status["sub_agents"]) == 2
     
     def test_spawn_and_terminate_cycle(self):
-        """Test spawning and terminating mini-agents in cycle."""
-        coordinator = AgentCoordinator(max_mini_agents=2)
+        """Test spawning and terminating sub-agents in cycle."""
+        coordinator = AgentCoordinator(max_sub_agents=2)
         
         # Spawn two agents (at limit)
-        mini1 = coordinator.spawn_mini_agent("Task 1", "main_worker")
-        mini2 = coordinator.spawn_mini_agent("Task 2", "main_worker")
-        assert mini1 is not None
-        assert mini2 is not None
+        sub1 = coordinator.spawn_sub_agent("Task 1", "worker")
+        sub2 = coordinator.spawn_sub_agent("Task 2", "worker")
+        assert sub1 is not None
+        assert sub2 is not None
         
         # Cannot spawn third
-        mini3 = coordinator.spawn_mini_agent("Task 3", "main_worker")
-        assert mini3 is None
+        sub3 = coordinator.spawn_sub_agent("Task 3", "worker")
+        assert sub3 is None
         
         # Terminate one
-        coordinator.terminate_mini_agent(mini1.id)
+        coordinator.terminate_sub_agent(sub1.id)
         
         # Now can spawn again
-        mini4 = coordinator.spawn_mini_agent("Task 4", "main_worker")
-        assert mini4 is not None
+        sub4 = coordinator.spawn_sub_agent("Task 4", "worker")
+        assert sub4 is not None
         
         # Verify count
-        assert len(coordinator.get_active_mini_agents()) == 2
+        assert len(coordinator.get_active_sub_agents()) == 2
