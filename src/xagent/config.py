@@ -107,6 +107,15 @@ class Settings(BaseSettings):
     enable_network_tools: bool = Field(default=True, description="Enable network tools")
     sandbox_enabled: bool = Field(default=True, description="Enable sandbox for tool execution")
 
+    # Content Moderation Configuration
+    moderation_mode: str = Field(
+        default="moderated",
+        description="Content moderation mode: 'moderated' (strict) or 'unmoderated' (freedom)",
+    )
+    moderation_enabled: bool = Field(
+        default=True, description="Enable content moderation system"
+    )
+
     # Monitoring
     prometheus_port: int = Field(default=9090, description="Prometheus metrics port")
     log_level: str = Field(default="INFO", description="Log level")

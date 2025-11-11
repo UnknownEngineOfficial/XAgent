@@ -768,6 +768,130 @@ async def get_goal(
     }
 
 
+# Content Moderation endpoints
+
+
+class ModerationStatusResponse(BaseModel):
+    """Moderation status response."""
+
+    mode: str = Field(..., description="Current moderation mode")
+    acknowledgment_given: bool = Field(..., description="Whether user acknowledged risks")
+    description: str = Field(..., description="Mode description")
+
+
+class ModerationModeRequest(BaseModel):
+    """Request to change moderation mode."""
+
+    mode: str = Field(..., description="New moderation mode: 'moderated' or 'unmoderated'")
+    user_acknowledgment: bool = Field(
+        default=False, description="User acknowledgment for unmoderated mode"
+    )
+
+
+class ModerationCheckRequest(BaseModel):
+    """Request to moderate content."""
+
+    content: dict[str, Any] = Field(..., description="Content to moderate")
+
+
+class ModerationCheckResponse(BaseModel):
+    """Response from content moderation."""
+
+    allowed: bool = Field(..., description="Whether content is allowed")
+    mode: str = Field(..., description="Current moderation mode")
+    category: str = Field(..., description="Content category")
+    message: str = Field(..., description="Moderation message")
+    warning: bool = Field(default=False, description="Whether there's a warning")
+    requires_confirmation: bool = Field(
+        default=False, description="Whether confirmation is required"
+    )
+    requires_review: bool = Field(default=False, description="Whether review is required")
+
+
+@app.get("/moderation/status", response_model=ModerationStatusResponse, tags=["Moderation"])
+async def get_moderation_status(
+    current_user: User = Depends(require_role(UserRole.USER)),
+) -> ModerationStatusResponse:
+    """
+    Get current content moderation status.
+
+    Requires USER role or higher.
+    """
+    from xagent.security.moderation import get_moderator
+
+    moderator = get_moderator()
+    status = moderator.get_status()
+    return ModerationStatusResponse(**status)
+
+
+@app.post("/moderation/mode", tags=["Moderation"])
+async def set_moderation_mode(
+    request: ModerationModeRequest,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> dict[str, Any]:
+    """
+    Switch content moderation mode.
+
+    Requires ADMIN role.
+    Switching to unmoderated mode requires explicit user acknowledgment.
+    """
+    from xagent.security.moderation import ModerationMode, get_moderator
+
+    try:
+        mode = ModerationMode(request.mode)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid moderation mode: {request.mode}. "
+            "Must be 'moderated' or 'unmoderated'",
+        )
+
+    moderator = get_moderator()
+    result = moderator.set_mode(mode, request.user_acknowledgment)
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["message"],
+        )
+
+    return result
+
+
+@app.post(
+    "/moderation/check", response_model=ModerationCheckResponse, tags=["Moderation"]
+)
+async def check_content_moderation(
+    request: ModerationCheckRequest,
+    current_user: User = Depends(require_role(UserRole.USER)),
+) -> ModerationCheckResponse:
+    """
+    Check if content passes moderation.
+
+    Requires USER role or higher.
+    """
+    from xagent.security.moderation import get_moderator
+
+    moderator = get_moderator()
+    result = moderator.moderate_content(request.content)
+    return ModerationCheckResponse(**result)
+
+
+@app.post("/moderation/acknowledge-risks", tags=["Moderation"])
+async def acknowledge_moderation_risks(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> dict[str, Any]:
+    """
+    Acknowledge risks of unmoderated mode.
+
+    Requires ADMIN role.
+    """
+    from xagent.security.moderation import get_moderator
+
+    moderator = get_moderator()
+    return moderator.acknowledge_risks()
+
+
 @app.get("/health")
 async def health_check() -> Response:
     """
