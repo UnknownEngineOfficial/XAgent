@@ -1703,3 +1703,847 @@ Das X-Agent Projekt ist in einem **soliden Production-Ready State** mit:
 4. ChromaDB Integration vervollständigen
 
 **Dieses Dokument wird regelmäßig aktualisiert** bei neuen Features, Metriken und Roadmap-Änderungen.
+
+---
+
+## 🛠️ Essential Tools Catalog
+
+Diese Sektion dokumentiert alle essentiellen, empfohlenen und optionalen Tools für das X-Agent System, basierend auf Best Practices für autonome Agent-Systeme.
+
+### Essentielle Tools (unabdingbar) ✅
+
+Diese Tools sind absolut notwendig für den Betrieb des Agent-Systems.
+
+#### 1. LLM Provider(s) ✅ IMPLEMENTIERT
+
+**Zweck**: Kern-Reasoning, Natural Language Planning, Reformulation, Summarization
+
+**Schnittstelle**: 
+- Model ID, prompt, max_tokens, temperature
+- System prompts, streaming optional
+- Multiple provider support für Redundanz
+
+**Sicherheit**:
+- Mehrere Anbieter für Redundanz
+- Usage quotas und rate limiting
+- Moderation hook für Content-Filtering
+- Min confidence/verification checks
+
+**Implementierung**:
+- ✅ OpenAI Integration (`config.py`: `openai_api_key`)
+- ✅ Anthropic Support (`config.py`: `anthropic_api_key`)
+- ✅ LangChain Integration für unified interface
+- ⚠️ Azure OpenAI (geplant)
+- ⚠️ Lokale LLMs (Llama-style) (geplant)
+
+**Dateien**:
+- `src/xagent/config.py` - API Keys Configuration
+- `src/xagent/planning/langgraph_planner.py` - LLM Integration für Planning
+- `requirements.txt` - openai>=1.10.0, langchain>=0.1.0
+
+**Status**: ✅ Production Ready mit OpenAI/Anthropic
+
+---
+
+#### 2. Planner (LangGraph / graph-planner adapter) ✅ IMPLEMENTIERT
+
+**Zweck**: Strukturierte Planerzeugung (Task-Graph), Goal→Subgoals Zerlegung
+
+**Schnittstelle**: 
+- `goal_description → plan (steps + metadata + resources_estimate)`
+
+**Sicherheit**:
+- Plan sanity checks
+- Cost/resource estimation
+- Required human-approval flags für kritische Operations
+
+**Implementierung**:
+- ✅ Dual Planner System (Legacy + LangGraph)
+- ✅ LangGraph Planner mit 5-Stage Workflow (Analyze, Decompose, Prioritize, Validate, Execute)
+- ✅ Goal Decomposition in Sub-Goals
+- ✅ Dependency Tracking
+- ✅ Plan Quality Evaluation
+
+**Dateien**:
+- `src/xagent/core/planner.py` - Legacy Planner
+- `src/xagent/planning/langgraph_planner.py` - LangGraph-based Planner
+- `src/xagent/core/goal_engine.py` - Hierarchical Goal Management
+- `tests/unit/test_langgraph_planner.py` - 24 Tests
+
+**Next Steps**:
+- [ ] LLM-Integration für LangGraph Planner aktivieren
+- [ ] Advanced Dependency Resolution (DAG)
+- [ ] Plan Quality Metrics & Adaptation
+
+**Status**: ✅ Production Ready, LLM Integration pending
+
+---
+
+#### 3. Executor / Tool Runner ✅ IMPLEMENTIERT
+
+**Zweck**: Vereinheitlichtes Ausführen von Tool-Aufrufen, Tracken, Retry, Sandboxing
+
+**Schnittstelle**: 
+- `execute(tool_name, payload, context) → result/status`
+
+**Sicherheit**:
+- OPA Policy Enforcement
+- Timeouts und resource quotas
+- Audit trail für alle Tool Calls
+- Docker Sandboxing für sichere Ausführung
+
+**Implementierung**:
+- ✅ Action Execution Framework
+- ✅ Tool Call Handling mit Error Recovery
+- ✅ Docker Sandbox Integration
+- ✅ Structured Error Handling
+- ✅ Goal Management Actions
+
+**Dateien**:
+- `src/xagent/core/executor.py` - Main Executor
+- `src/xagent/sandbox/docker_sandbox.py` - Docker Sandbox
+- `src/xagent/tools/tool_server.py` - Tool Registration & Execution
+- `tests/unit/test_executor.py` - 10 Tests
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 4. HTTP/External API Client (mit rate limiting + proxy) ⚠️ PARTIAL
+
+**Zweck**: Web APIs, SaaS, REST integrations
+
+**Schnittstelle**: 
+- `method, url, headers, body, timeout`
+
+**Sicherheit**:
+- Proxy that redacts secrets
+- Rate limits und circuit breaker
+- Domain allowlist
+- Request/Response validation
+
+**Implementierung**:
+- ✅ HTTPX Client für HTTP Requests (`requirements.txt`)
+- ✅ Rate Limiting auf API Level
+- ✅ Distributed Rate Limiting (Redis-based)
+- ⚠️ HTTP API Tool für Agent usage (zu implementieren)
+- ⚠️ Proxy mit Secret Redaction (zu implementieren)
+- ⚠️ Domain Allowlist (zu implementieren)
+
+**Dateien**:
+- `src/xagent/api/rate_limiting.py` - Rate Limiting
+- `src/xagent/api/distributed_rate_limiting.py` - Distributed Rate Limiting
+- `requirements.txt` - httpx>=0.26.0, aiohttp>=3.9.0
+
+**Next Steps**:
+- [ ] HTTP API Tool implementieren (GET, POST, PUT, DELETE)
+- [ ] Proxy Layer mit Secret Redaction
+- [ ] Domain Allowlist Configuration
+- [ ] Circuit Breaker Pattern
+
+**Status**: ⚠️ Partial - Core HTTP verfügbar, Tool Integration pending
+
+---
+
+#### 5. File & Object Storage ✅ IMPLEMENTIERT
+
+**Zweck**: Persistente Artefakte (logs, attachments, downloaded files)
+
+**Schnittstelle**: 
+- `put/get/list/delete, signed URLs`
+
+**Beispiele**: S3/GCS/MinIO
+
+**Sicherheit**:
+- Encryption at rest
+- Access Control Lists (ACLs)
+- Secure file operations
+
+**Implementierung**:
+- ✅ File Tools (read_file, write_file)
+- ✅ Docker Volume Mounts für Persistence
+- ⚠️ S3/GCS/MinIO Integration (zu implementieren)
+- ⚠️ Signed URLs (zu implementieren)
+
+**Dateien**:
+- `src/xagent/tools/langserve_tools.py` - File Tools
+- `docker-compose.yml` - Volume Configuration
+
+**Next Steps**:
+- [ ] S3/GCS/MinIO Integration
+- [ ] Signed URL Generation
+- [ ] Object Storage Abstraction Layer
+
+**Status**: ✅ Local File Storage Ready, Cloud Storage pending
+
+---
+
+#### 6. Vector DB / Semantic Search ⚠️ PARTIAL
+
+**Zweck**: Memory retrieval, similar items, contextual grounding
+
+**Schnittstelle**: 
+- `upsert(id, vector, metadata), query(vector/text, k), delete`
+
+**Beispiele**: Milvus, Pinecone, Weaviate, Qdrant, ChromaDB
+
+**Implementierung**:
+- ✅ ChromaDB in Dependencies (`requirements.txt`)
+- ✅ ChromaDB Configuration (`config.py`)
+- ⚠️ Vector Store Integration (zu implementieren)
+- ⚠️ Embedding Generation (OpenAI/Sentence Transformers) (zu implementieren)
+- ⚠️ Semantic Search Interface (zu implementieren)
+
+**Dateien**:
+- `src/xagent/config.py` - ChromaDB Configuration
+- `requirements.txt` - chromadb>=0.4.20
+
+**Next Steps**:
+- [ ] ChromaDB Vector Store Implementation
+- [ ] Embedding Generation Pipeline
+- [ ] Semantic Search Queries
+- [ ] Knowledge Retrieval Integration
+
+**Status**: ⚠️ Dependencies Ready, Implementation Pending
+
+---
+
+#### 7. Relational/Document DB ✅ IMPLEMENTIERT
+
+**Zweck**: Goals, agent state, audit logs, config
+
+**Schnittstelle**: Standard DB client mit ORM & transactional guarantees
+
+**Implementierung**:
+- ✅ PostgreSQL Integration
+- ✅ SQLAlchemy ORM Models
+- ✅ Alembic Migrations
+- ✅ Models: Goal, AgentState, Memory, Action, MetricSnapshot
+
+**Dateien**:
+- `src/xagent/database/models.py` - SQLAlchemy Models
+- `alembic/` - Migration Scripts
+- `alembic.ini` - Alembic Configuration
+- `requirements.txt` - psycopg[binary]>=3.1.0, sqlalchemy>=2.0.0
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 8. Memory Layer Abstraction ⚠️ PARTIAL
+
+**Zweck**: Unified API for short/long term memory (combines vector DB + SQL metadata)
+
+**Schnittstelle**: 
+- `save_perception(), retrieve_context(query, k), purge_expired()`
+
+**Implementierung**:
+- ✅ Memory Layer Abstraction erstellt
+- ✅ Redis Cache für Short-term Memory
+- ✅ PostgreSQL für Medium-term Memory
+- ⚠️ ChromaDB für Long-term Semantic Memory (zu implementieren)
+- ✅ 3-Tier Memory System (RAM/Buffer/Knowledge Store)
+
+**Dateien**:
+- `src/xagent/memory/memory_layer.py` - Memory Abstraction
+- `src/xagent/memory/cache.py` - Redis Cache (23 Tests)
+- `tests/unit/test_cache.py` - Cache Tests
+
+**Next Steps**:
+- [ ] ChromaDB Integration vervollständigen
+- [ ] Knowledge Retrieval Interface
+- [ ] Memory Expiration & Cleanup
+
+**Status**: ⚠️ Partial - Short/Medium Term Ready, Long-term Pending
+
+---
+
+### Highly Recommended Tools (stärke Qualität / Zuverlässigkeit)
+
+Diese Tools verbessern signifikant die Qualität und Zuverlässigkeit des Systems.
+
+#### 1. Sandbox für Code-Execution ✅ IMPLEMENTIERT
+
+**Zweck**: Sicheres Ausführen generierten Codes (Python snippets), Tests, Daten-Transformation
+
+**Schnittstelle**: 
+- `exec_code(code, timeout, constraints) → stdout, stderr, artifacts`
+
+**Sicherheit**:
+- Vollständige Isolation (Docker Container)
+- Seccomp profiles
+- Resource limits (CPU, Memory)
+- No network by default
+
+**Implementierung**:
+- ✅ Docker Sandbox
+- ✅ Multi-Language Support (Python, JavaScript, TypeScript, Bash, Go)
+- ✅ Timeout Protection
+- ✅ Non-Root User Execution
+- ✅ Output Capturing
+
+**Dateien**:
+- `src/xagent/sandbox/docker_sandbox.py`
+- `src/xagent/tools/langserve_tools.py` - execute_code tool
+- `tests/unit/test_docker_sandbox.py` - 10 Tests
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 2. Browser / Web-Automation (Headless Playwright) ❌ NOT IMPLEMENTED
+
+**Zweck**: Scraping, komplexe Web-Interaktionen, JS-rendered pages
+
+**Sicherheit**:
+- Run in isolated container
+- Rate limiting
+- Legal compliance checks
+
+**Next Steps**:
+- [ ] Playwright Integration
+- [ ] Browser Automation Tool
+- [ ] Web Scraping with JS rendering
+- [ ] Screenshot & PDF generation
+
+**Status**: ❌ Not Implemented
+
+---
+
+#### 3. OCR / Document Processing ❌ NOT IMPLEMENTED
+
+**Zweck**: PDFs, Bilder → Text extrahieren
+
+**Schnittstelle**: 
+- `upload(file) → text, confidence`
+
+**Beispiele**: Tesseract, Cloud OCR APIs
+
+**Next Steps**:
+- [ ] Tesseract Integration
+- [ ] PDF Text Extraction
+- [ ] Image OCR
+- [ ] Document Processing Pipeline
+
+**Status**: ❌ Not Implemented
+
+---
+
+#### 4. Email / Notifications / Chat Integrations ⚠️ PARTIAL
+
+**Zweck**: Benutzer-Benachrichtigung, human-in-the-loop approval, alerts
+
+**Schnittstelle**: 
+- `send_email, send_slack, create_thread, await_response`
+
+**Sicherheit**:
+- Opt-in notifications
+- Audit of approvals
+- Rate limiting
+
+**Implementierung**:
+- ⚠️ Alert Manager Configuration vorhanden
+- ⚠️ Notification Channels (zu implementieren)
+- ⚠️ Email/Slack Tools (zu implementieren)
+
+**Dateien**:
+- `config/alerting/alertmanager.yml` - AlertManager Config
+
+**Next Steps**:
+- [ ] Email Tool Implementation
+- [ ] Slack Integration
+- [ ] HITL Approval Workflow
+- [ ] Notification Templates
+
+**Status**: ⚠️ Infrastructure Ready, Tools Pending
+
+---
+
+#### 5. Git / VCS Interface ❌ NOT IMPLEMENTED
+
+**Zweck**: Code changes, infra as code, provenance of generated artifacts
+
+**Schnittstelle**: 
+- `clone/pull/commit/push/pr create`
+
+**Sicherheit**:
+- Limited scopes
+- Signed commits
+- Gated merges
+
+**Next Steps**:
+- [ ] Git Operations Tool
+- [ ] Repository Management
+- [ ] Branch & PR Management
+- [ ] Commit Signing
+
+**Status**: ❌ Not Implemented
+
+---
+
+#### 6. Task Queue / Worker Pool & Scheduler ✅ IMPLEMENTIERT
+
+**Zweck**: Manage async jobs (mini-agents as bounded worker pool), retry policies, scheduling
+
+**Schnittstelle**: 
+- `enqueue(task), worker_consume(), schedule(cron)`
+
+**Beispiele**: Celery, RQ, Bull (Node), asyncio pool
+
+**Implementierung**:
+- ✅ Celery Integration
+- ✅ Redis Broker
+- ✅ Task Queue & Worker
+- ✅ Async Processing
+
+**Dateien**:
+- `src/xagent/tasks/queue.py` - Celery Queue
+- `src/xagent/tasks/worker.py` - Celery Worker
+- `src/xagent/config.py` - Celery Configuration
+- `tests/unit/test_task_queue.py` - Queue Tests
+- `tests/unit/test_task_worker.py` - Worker Tests
+
+**Status**: ✅ Production Ready
+
+---
+
+### Optional / Spezialisiert (je nach Anwendungsfall)
+
+Diese Tools sind für spezifische Use Cases relevant.
+
+#### Domain-Specific Tools (Not Yet Implemented)
+
+- ❌ **Image / Media Generation** (Stable Diffusion, DALL·E)
+- ❌ **Search Engine API** (Bing/Google custom search)
+- ❌ **Spreadsheet / Excel Tools** (pandas adapters, Google Sheets)
+- ❌ **Database Connectors** (SQL execution, BigQuery)
+- ❌ **Calendar / Contact Integrations** (Google Calendar, Outlook)
+- ❌ **Payment / Billing APIs**
+- ❌ **Cloud Infra APIs** (AWS/GCP/Azure) - strikte human approval für destructive ops
+- ❌ **Identity / Auth** (SSO providers, Secrets Managers like HashiCorp Vault)
+
+**Status**: ❌ Not Implemented - Add on demand based on use case
+
+---
+
+### Observability, Testing & Governance (Infrastruktur-Tools) ✅ MOSTLY IMPLEMENTED
+
+#### 1. Logging & Storage for Traces ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ Strukturiertes Logging (structlog)
+- ✅ Loki Configuration vorhanden
+- ✅ Promtail für Log Collection
+- ✅ JSON Log Output
+- ✅ Contextual Logging mit Request IDs
+
+**Dateien**:
+- `src/xagent/utils/logging.py`
+- `config/loki-config.yml`
+- `config/promtail-config.yml`
+- `tests/unit/test_logging.py`
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 2. Metrics ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ Prometheus Integration
+- ✅ Custom Metrics (Counter, Gauge, Histogram)
+- ✅ Metrics Endpoint `/metrics`
+- ✅ Task Metrics
+- ✅ Success Rate Tracking
+
+**Dateien**:
+- `src/xagent/monitoring/metrics.py`
+- `src/xagent/monitoring/task_metrics.py`
+- `config/prometheus.yml`
+- `config/alerting/prometheus-rules.yml`
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 3. Tracing ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ OpenTelemetry Integration
+- ✅ Jaeger Tracing
+- ✅ Distributed Tracing
+- ✅ Span Creation für alle Hauptoperationen
+
+**Dateien**:
+- `src/xagent/monitoring/tracing.py`
+- `config/jaeger` (Docker setup)
+- `tests/unit/test_tracing.py`
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 4. Policy Engine ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ OPA (Open Policy Agent) Integration
+- ✅ Policy Rules (YAML + Rego)
+- ✅ Runtime Policy Checks
+- ✅ Policy Decision Logging
+
+**Dateien**:
+- `src/xagent/security/opa_client.py`
+- `src/xagent/security/policy.py`
+- `config/policies/` - Rego policies
+- `tests/unit/test_opa_client.py`
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 5. Moderation API ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ Content Moderation System
+- ✅ Toggleable (moderated/unmoderated mode)
+- ✅ Pre/Post LLM Call Moderation
+- ✅ Content Classification
+
+**Dateien**:
+- `src/xagent/security/moderation.py`
+- `tests/unit/test_moderation.py`
+- `docs/CONTENT_MODERATION.md`
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 6. Replay / Simulation Harness ⚠️ PARTIAL
+
+**Implementierung**:
+- ⚠️ Checkpoint/Resume System (implementiert)
+- ⚠️ State Serialization (implementiert)
+- ❌ Dry-run mode (zu implementieren)
+- ❌ Deterministic replay (zu implementieren)
+
+**Next Steps**:
+- [ ] Dry-run Mode
+- [ ] Deterministic Replay
+- [ ] Simulation Environment
+
+**Status**: ⚠️ Partial Implementation
+
+---
+
+#### 7. CI/CD & Canary Deployment ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ GitHub Actions CI/CD Pipeline
+- ✅ Automated Testing (Unit, Integration)
+- ✅ Security Scans (CodeQL, Bandit, Safety)
+- ✅ Docker Build & Push
+- ⚠️ Canary Deployment (zu implementieren)
+
+**Dateien**:
+- `.github/workflows/ci.yml`
+- `Makefile` - Build & Test Targets
+
+**Status**: ✅ CI Ready, Canary Deployment Pending
+
+---
+
+### Security / Safety Tooling (must-have) ✅ MOSTLY IMPLEMENTED
+
+#### 1. Secrets Manager ⚠️ PARTIAL
+
+**Implementierung**:
+- ✅ Environment Variables (.env)
+- ✅ Docker Secrets Support
+- ❌ HashiCorp Vault Integration (zu implementieren)
+- ❌ Dynamic Secrets Rotation (zu implementieren)
+
+**Next Steps**:
+- [ ] Vault Integration
+- [ ] Dynamic Secrets Rotation
+- [ ] API Key Management
+
+**Status**: ⚠️ Basic Secrets Management, Vault Pending
+
+---
+
+#### 2. Policy Filter / Enforcement ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ OPA Policy Engine
+- ✅ Pre-condition checks für sensitive tool calls
+- ✅ Policy Decision Logging
+- ✅ Three action types: allow, block, require_confirmation
+
+**Status**: ✅ Production Ready
+
+---
+
+#### 3. Human-in-the-Loop (HITL) Approval Workflow ⚠️ PARTIAL
+
+**Implementierung**:
+- ⚠️ Policy-based approval flags vorhanden
+- ❌ HITL Workflow Interface (zu implementieren)
+- ❌ Approval Request/Response System (zu implementieren)
+
+**Next Steps**:
+- [ ] HITL Workflow Implementation
+- [ ] Approval UI/API
+- [ ] Notification Integration
+
+**Status**: ⚠️ Policy Infrastructure Ready, Workflow Pending
+
+---
+
+#### 4. Rate Limiting & Circuit Breakers ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ API-Level Rate Limiting
+- ✅ Distributed Rate Limiting (Redis)
+- ✅ Configurable Limits & Burst
+- ⚠️ Circuit Breaker Pattern (zu implementieren)
+
+**Dateien**:
+- `src/xagent/api/rate_limiting.py`
+- `src/xagent/api/distributed_rate_limiting.py`
+- `tests/unit/test_rate_limiting.py`
+
+**Status**: ✅ Rate Limiting Ready, Circuit Breaker Pending
+
+---
+
+#### 5. Input/Output Sanitizers ⚠️ PARTIAL
+
+**Implementierung**:
+- ✅ Pydantic Input Validation
+- ✅ Tool Input Schemas
+- ⚠️ Data Exfiltration Detection (zu implementieren)
+- ⚠️ Output Sanitization (zu implementieren)
+
+**Next Steps**:
+- [ ] Data Exfiltration Detector
+- [ ] Output Sanitization Layer
+- [ ] PII Detection & Redaction
+
+**Status**: ⚠️ Input Validation Ready, Detection Pending
+
+---
+
+#### 6. Audit Storage ✅ IMPLEMENTIERT
+
+**Implementierung**:
+- ✅ PostgreSQL Audit Storage
+- ✅ Action Logging
+- ✅ Policy Decision Logging
+- ⚠️ Tamper-evidence (zu implementieren)
+- ⚠️ Retention Policies (zu implementieren)
+
+**Dateien**:
+- `src/xagent/database/models.py` - Action Model
+
+**Next Steps**:
+- [ ] Tamper-evident Logging
+- [ ] Retention Policy Implementation
+- [ ] Audit Export Tools
+
+**Status**: ✅ Basic Audit Logging, Advanced Features Pending
+
+---
+
+## 📐 Design Patterns & Operational Requirements
+
+Diese Design Patterns werden für alle Tools angewendet:
+
+### 1. Adapter Pattern ✅ IMPLEMENTIERT
+- **Implementierung**: Tool Server mit standardisiertem Interface
+- **Status**: ✅ Alle Tools implementieren einheitliches Tool Interface
+- **Dateien**: `src/xagent/tools/tool_server.py`, `src/xagent/tools/langserve_tools.py`
+
+### 2. Capability/Blessing Tokens ⚠️ PARTIAL
+- **Implementierung**: OPA Policy-based Authorization
+- **Status**: ⚠️ Policy Enforcement vorhanden, Token-based access zu implementieren
+- **Next Steps**: 
+  - [ ] Time-limited Token Generation
+  - [ ] Capability-based Access Control
+
+### 3. Policy Checkpoint ✅ IMPLEMENTIERT
+- **Flow**: Planner → Verifier → Policy → Executor → Tool
+- **Implementierung**: OPA Integration vor Tool Execution
+- **Status**: ✅ Policy Checks aktiv für Tool Calls
+
+### 4. Idempotency & Compensating Actions ⚠️ PARTIAL
+- **Implementierung**: 
+  - ✅ Retry Logic mit Tenacity
+  - ⚠️ Idempotency Keys (zu implementieren)
+  - ⚠️ Compensating Actions Interface (zu implementieren)
+
+### 5. Timeouts & Retries ✅ IMPLEMENTIERT
+- **Implementierung**:
+  - ✅ Configurable Timeouts pro Tool
+  - ✅ Exponential Backoff (Tenacity)
+  - ✅ Max Retries Configuration
+- **Dateien**: `requirements.txt` - tenacity>=8.2.3
+
+### 6. Observability ✅ IMPLEMENTIERT
+- **Implementierung**:
+  - ✅ Trace per Tool Call
+  - ✅ Metrics export
+  - ✅ Audit Logging
+  - ✅ Parent Goal ID Tracking
+- **Status**: ✅ Comprehensive Observability
+
+### 7. Redaction & Data Minimization ⚠️ PARTIAL
+- **Implementierung**:
+  - ⚠️ Secret Redaction in Logs (zu implementieren)
+  - ⚠️ PII Detection (zu implementieren)
+  - ✅ Structured Logging für selective field logging
+- **Next Steps**:
+  - [ ] Proxy Layer mit Secret Redaction
+  - [ ] PII Detection & Masking
+  - [ ] Data Minimization Policies
+
+### 8. Configurable Limits ✅ IMPLEMENTIERT
+- **Implementierung**:
+  - ✅ Max Concurrency für Sub-Agents (5-7)
+  - ✅ Global Rate Limits
+  - ✅ Per-Tool Quotas (via OPA)
+  - ✅ Resource Limits (Docker Sandbox)
+- **Status**: ✅ Comprehensive Limit Configuration
+
+---
+
+## 📊 Tools Implementation Summary
+
+| Tool Category | Status | Implementation % | Priority |
+|---------------|--------|------------------|----------|
+| **Essential Tools** | ⚠️ Partial | 70% | P0 |
+| ├─ LLM Providers | ✅ Ready | 90% | P0 |
+| ├─ Planner | ✅ Ready | 95% | P0 |
+| ├─ Executor | ✅ Ready | 100% | P0 |
+| ├─ HTTP Client | ⚠️ Partial | 60% | P0 |
+| ├─ File Storage | ✅ Ready | 80% | P0 |
+| ├─ Vector DB | ⚠️ Partial | 30% | P0 |
+| ├─ Relational DB | ✅ Ready | 100% | P0 |
+| └─ Memory Layer | ⚠️ Partial | 70% | P0 |
+| **Highly Recommended** | ⚠️ Partial | 40% | P1 |
+| ├─ Code Sandbox | ✅ Ready | 100% | P1 |
+| ├─ Browser Automation | ❌ Missing | 0% | P2 |
+| ├─ OCR/Documents | ❌ Missing | 0% | P2 |
+| ├─ Email/Notifications | ⚠️ Partial | 20% | P1 |
+| ├─ Git/VCS | ❌ Missing | 0% | P2 |
+| └─ Task Queue | ✅ Ready | 100% | P1 |
+| **Observability & Governance** | ✅ Ready | 85% | P0 |
+| ├─ Logging | ✅ Ready | 100% | P0 |
+| ├─ Metrics | ✅ Ready | 100% | P0 |
+| ├─ Tracing | ✅ Ready | 100% | P0 |
+| ├─ Policy Engine | ✅ Ready | 100% | P0 |
+| ├─ Moderation | ✅ Ready | 100% | P0 |
+| ├─ Replay/Simulation | ⚠️ Partial | 50% | P1 |
+| └─ CI/CD | ✅ Ready | 90% | P0 |
+| **Security & Safety** | ✅ Ready | 75% | P0 |
+| ├─ Secrets Manager | ⚠️ Partial | 50% | P0 |
+| ├─ Policy Enforcement | ✅ Ready | 100% | P0 |
+| ├─ HITL Workflow | ⚠️ Partial | 30% | P1 |
+| ├─ Rate Limiting | ✅ Ready | 90% | P0 |
+| ├─ Input/Output Sanitizers | ⚠️ Partial | 60% | P1 |
+| └─ Audit Storage | ✅ Ready | 80% | P0 |
+| **Design Patterns** | ✅ Ready | 80% | P0 |
+
+**Gesamtstatus**: 72% implementiert, 28% zu vervollständigen
+
+**Legende**:
+- ✅ Ready = Production-ready implementiert
+- ⚠️ Partial = Teilweise implementiert, Erweiterung nötig
+- ❌ Missing = Noch nicht implementiert
+
+---
+
+## 🎯 Tools Roadmap
+
+### Phase 1: Complete Essential Tools (4-6 Wochen)
+
+**Priority: P0 (Critical)**
+
+1. **HTTP API Tool** (1 Woche)
+   - GET, POST, PUT, DELETE Requests
+   - Proxy mit Secret Redaction
+   - Domain Allowlist
+   - Circuit Breaker
+
+2. **ChromaDB Vector Store** (1 Woche)
+   - Embedding Generation Pipeline
+   - Semantic Search Implementation
+   - Knowledge Retrieval Interface
+
+3. **Cloud Storage Integration** (1 Woche)
+   - S3/GCS/MinIO Adapter
+   - Signed URL Generation
+   - Object Storage API
+
+4. **Secrets Management** (1 Woche)
+   - HashiCorp Vault Integration
+   - Dynamic Secrets Rotation
+   - API Key Management
+
+### Phase 2: Highly Recommended Tools (4-6 Wochen)
+
+**Priority: P1 (High)**
+
+1. **Browser Automation** (2 Wochen)
+   - Playwright Integration
+   - Web Scraping Tool
+   - Screenshot & PDF Generation
+
+2. **Email/Notifications** (1 Woche)
+   - Email Tool Implementation
+   - Slack Integration
+   - HITL Approval Workflow
+
+3. **Git/VCS Interface** (1 Woche)
+   - Git Operations Tool
+   - Repository Management
+   - Branch & PR Management
+
+4. **OCR/Document Processing** (1 Woche)
+   - Tesseract Integration
+   - PDF Text Extraction
+   - Document Processing Pipeline
+
+### Phase 3: Security Hardening (2-3 Wochen)
+
+**Priority: P0 (Critical)**
+
+1. **HITL Workflow** (1 Woche)
+   - Approval UI/API
+   - Notification Integration
+   - Audit Trail
+
+2. **Data Protection** (1 Woche)
+   - Secret Redaction in Logs
+   - PII Detection & Masking
+   - Data Exfiltration Detection
+
+3. **Advanced Audit** (1 Woche)
+   - Tamper-evident Logging
+   - Retention Policies
+   - Audit Export Tools
+
+### Phase 4: Optional Tools (On Demand)
+
+**Priority: P2-P3 (Medium-Low)**
+
+- Image/Media Generation
+- Search Engine API
+- Spreadsheet Tools
+- Database Connectors
+- Calendar Integration
+- Payment APIs
+- Cloud Infra APIs
+
+---
+
+**Dieses Dokument wird regelmäßig aktualisiert** bei neuen Features, Metriken und Roadmap-Änderungen.
