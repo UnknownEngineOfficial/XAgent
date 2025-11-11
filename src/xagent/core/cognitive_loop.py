@@ -1,13 +1,18 @@
 """Cognitive Loop - The continuous thinking process of X-Agent."""
 
 import asyncio
+import json
+import pickle
+import time
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
 from typing import Any, cast
 
 from xagent.config import settings
 from xagent.core.goal_engine import GoalEngine, GoalStatus
 from xagent.memory.memory_layer import MemoryLayer
+from xagent.monitoring.metrics import MetricsCollector
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -71,14 +76,43 @@ class CognitiveLoop:
         # Perception queue for inputs
         self.perception_queue: asyncio.Queue = asyncio.Queue()
 
-    async def start(self) -> None:
-        """Start the cognitive loop."""
+        # Metrics tracking
+        self.metrics = MetricsCollector()
+        self.start_time: float | None = None
+        self.task_results: list[bool] = []  # Track last 100 task results
+
+        # Checkpoint configuration
+        self.checkpoint_enabled = getattr(settings, "checkpoint_enabled", True)
+        self.checkpoint_interval = getattr(settings, "checkpoint_interval", 10)  # Every 10 iterations
+        self.checkpoint_dir = Path(getattr(settings, "checkpoint_dir", "/tmp/xagent_checkpoints"))
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.last_checkpoint_iteration = 0
+
+    async def start(self, resume_from_checkpoint: bool = True) -> None:
+        """
+        Start the cognitive loop.
+        
+        Args:
+            resume_from_checkpoint: If True, attempt to resume from last checkpoint
+        """
         if self.running:
             logger.warning("Cognitive loop is already running")
             return
 
+        # Try to load checkpoint if requested
+        checkpoint_loaded = False
+        if resume_from_checkpoint:
+            checkpoint_loaded = await self.load_checkpoint()
+            if checkpoint_loaded:
+                logger.info("Resumed from checkpoint")
+
         self.running = True
         self.state = CognitiveState.THINKING
+        
+        # Only reset start_time if not loaded from checkpoint
+        if not checkpoint_loaded or self.start_time is None:
+            self.start_time = time.time()
+        
         logger.info("Cognitive loop started")
 
         # Run the main loop
@@ -103,8 +137,17 @@ class CognitiveLoop:
     async def _loop(self) -> None:
         """Main cognitive loop."""
         while self.running and self.iteration_count < self.max_iterations:
+            loop_start = time.time()
+            iteration_success = True
+            decision_start = time.time()
+
             try:
                 self.iteration_count += 1
+
+                # Update uptime metric
+                if self.start_time:
+                    uptime = time.time() - self.start_time
+                    self.metrics.update_agent_uptime(uptime)
 
                 # Phase 1: Perception
                 self.current_phase = LoopPhase.PERCEPTION
@@ -122,19 +165,40 @@ class CognitiveLoop:
                 if plan:
                     self.current_phase = LoopPhase.EXECUTION
                     self.state = CognitiveState.ACTING
+                    
+                    # Record decision latency (perception to execution start)
+                    decision_latency = time.time() - decision_start
+                    self.metrics.record_decision_latency(decision_latency)
+                    
                     result = await self._execute(plan)
+
+                    # Track task success
+                    task_success = result.get("success", False)
+                    self.metrics.record_task_result(task_success)
+                    self._update_task_success_rate(task_success)
 
                     # Phase 5: Reflection
                     self.current_phase = LoopPhase.REFLECTION
                     self.state = CognitiveState.REFLECTING
                     await self._reflect(result)
 
+                # Save checkpoint if needed
+                if self.should_checkpoint():
+                    await self.save_checkpoint()
+
                 # Small delay between iterations
                 await asyncio.sleep(0.1)
 
             except Exception as e:
                 logger.error(f"Error in cognitive loop: {e}", exc_info=True)
+                iteration_success = False
                 await asyncio.sleep(1)  # Prevent tight error loop
+
+            finally:
+                # Record cognitive loop duration and status
+                loop_duration = time.time() - loop_start
+                status = "success" if iteration_success else "error"
+                self.metrics.record_cognitive_loop(loop_duration, status)
 
         logger.info(f"Cognitive loop ended after {self.iteration_count} iterations")
 
@@ -319,3 +383,124 @@ class CognitiveLoop:
 
         # Log reflection
         logger.debug(f"Reflection - Success: {success}, Iteration: {self.iteration_count}")
+
+    def _update_task_success_rate(self, success: bool) -> None:
+        """
+        Update the rolling task success rate.
+        
+        Keeps track of the last 100 task results and calculates success rate.
+        
+        Args:
+            success: Whether the task succeeded
+        """
+        # Add to results list
+        self.task_results.append(success)
+        
+        # Keep only last 100 results
+        if len(self.task_results) > 100:
+            self.task_results = self.task_results[-100:]
+        
+        # Calculate success rate
+        if self.task_results:
+            success_rate = (sum(1 for r in self.task_results if r) / len(self.task_results)) * 100
+            self.metrics.update_task_success_rate(success_rate)
+
+    def _get_checkpoint_state(self) -> dict[str, Any]:
+        """
+        Get current state for checkpointing.
+        
+        Returns:
+            Dictionary containing checkpoint state
+        """
+        return {
+            "iteration_count": self.iteration_count,
+            "state": self.state.value,
+            "current_phase": self.current_phase.value,
+            "start_time": self.start_time,
+            "task_results": self.task_results,
+            "last_checkpoint_iteration": self.last_checkpoint_iteration,
+            "active_goal_id": self.goal_engine.active_goal_id if hasattr(self.goal_engine, "active_goal_id") else None,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+    async def save_checkpoint(self) -> None:
+        """
+        Save current state to checkpoint file.
+        
+        Saves both JSON (metadata) and pickle (full state) formats.
+        """
+        if not self.checkpoint_enabled:
+            return
+
+        try:
+            # Ensure checkpoint directory exists
+            self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            checkpoint_state = self._get_checkpoint_state()
+            
+            # Save as JSON for readability
+            json_path = self.checkpoint_dir / "checkpoint.json"
+            with open(json_path, "w") as f:
+                json.dump(checkpoint_state, f, indent=2)
+            
+            # Save full state with pickle for complete restoration
+            pickle_path = self.checkpoint_dir / "checkpoint.pkl"
+            with open(pickle_path, "wb") as f:
+                pickle.dump(checkpoint_state, f)
+            
+            self.last_checkpoint_iteration = self.iteration_count
+            logger.info(f"Checkpoint saved at iteration {self.iteration_count}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save checkpoint: {e}", exc_info=True)
+
+    async def load_checkpoint(self) -> bool:
+        """
+        Load state from checkpoint file.
+        
+        Returns:
+            True if checkpoint was loaded successfully, False otherwise
+        """
+        if not self.checkpoint_enabled:
+            return False
+
+        try:
+            # Try to load from pickle first (more complete)
+            pickle_path = self.checkpoint_dir / "checkpoint.pkl"
+            if pickle_path.exists():
+                with open(pickle_path, "rb") as f:
+                    checkpoint_state = pickle.load(f)
+                
+                # Restore state
+                self.iteration_count = checkpoint_state.get("iteration_count", 0)
+                self.state = CognitiveState(checkpoint_state.get("state", "idle"))
+                self.current_phase = LoopPhase(checkpoint_state.get("current_phase", "perception"))
+                self.start_time = checkpoint_state.get("start_time")
+                self.task_results = checkpoint_state.get("task_results", [])
+                self.last_checkpoint_iteration = checkpoint_state.get("last_checkpoint_iteration", 0)
+                
+                # Restore active goal if available
+                active_goal_id = checkpoint_state.get("active_goal_id")
+                if active_goal_id and hasattr(self.goal_engine, "set_active_goal"):
+                    self.goal_engine.set_active_goal(active_goal_id)
+                
+                logger.info(f"Checkpoint loaded from iteration {self.iteration_count}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Failed to load checkpoint: {e}", exc_info=True)
+        
+        return False
+
+    def should_checkpoint(self) -> bool:
+        """
+        Determine if a checkpoint should be saved.
+        
+        Returns:
+            True if checkpoint should be saved
+        """
+        if not self.checkpoint_enabled:
+            return False
+        
+        iterations_since_last = self.iteration_count - self.last_checkpoint_iteration
+        return iterations_since_last >= self.checkpoint_interval

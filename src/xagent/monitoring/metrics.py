@@ -79,6 +79,33 @@ agent_metacognition_checks = Counter(
     registry=registry,
 )
 
+# Runtime Performance Metrics (Critical for FEATURES.md)
+agent_uptime_seconds = Gauge(
+    "agent_uptime_seconds",
+    "Agent uptime in seconds since last start",
+    registry=registry,
+)
+
+agent_decision_latency = Histogram(
+    "agent_decision_latency_seconds",
+    "Time taken for agent to make decisions (perception to execution)",
+    buckets=[0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0],
+    registry=registry,
+)
+
+agent_task_success_rate = Gauge(
+    "agent_task_success_rate_percent",
+    "Percentage of successfully completed tasks",
+    registry=registry,
+)
+
+agent_tasks_completed_total = Counter(
+    "agent_tasks_completed_total",
+    "Total number of tasks completed",
+    ["status"],  # success, failure
+    registry=registry,
+)
+
 
 # ============================================================================
 # API Metrics
@@ -322,6 +349,23 @@ class MetricsCollector:
     def record_metacognition_check(self, trigger: str = "periodic") -> None:
         """Record metacognition check."""
         agent_metacognition_checks.labels(trigger=trigger).inc()
+
+    def update_agent_uptime(self, uptime_seconds: float) -> None:
+        """Update agent uptime metric."""
+        agent_uptime_seconds.set(uptime_seconds)
+
+    def record_decision_latency(self, latency_seconds: float) -> None:
+        """Record decision latency (perception to execution)."""
+        agent_decision_latency.observe(latency_seconds)
+
+    def record_task_result(self, success: bool) -> None:
+        """Record task completion result."""
+        status = "success" if success else "failure"
+        agent_tasks_completed_total.labels(status=status).inc()
+
+    def update_task_success_rate(self, success_rate_percent: float) -> None:
+        """Update task success rate gauge."""
+        agent_task_success_rate.set(success_rate_percent)
 
     # API metrics
 

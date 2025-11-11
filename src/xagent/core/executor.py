@@ -1,8 +1,10 @@
 """Executor - Action execution for X-Agent."""
 
+import time
 from datetime import datetime, timezone
 from typing import Any, cast
 
+from xagent.monitoring.metrics import MetricsCollector
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -23,6 +25,7 @@ class Executor:
             tool_server: Tool server instance
         """
         self.tool_server = tool_server
+        self.metrics = MetricsCollector()
 
     async def execute(self, plan: dict[str, Any]) -> dict[str, Any]:
         """
@@ -83,15 +86,27 @@ class Executor:
         self, tool_name: str, parameters: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute tool call."""
-        if self.tool_server:
-            result = await self.tool_server.call_tool(tool_name, parameters)
-            return cast(dict[str, Any], result)
-        else:
-            logger.warning("Tool server not available")
-            return {
-                "message": f"Tool call simulated: {tool_name}",
-                "parameters": parameters,
-            }
+        start_time = time.time()
+        status = "success"
+        
+        try:
+            if self.tool_server:
+                result = await self.tool_server.call_tool(tool_name, parameters)
+                return cast(dict[str, Any], result)
+            else:
+                logger.warning("Tool server not available")
+                status = "unavailable"
+                return {
+                    "message": f"Tool call simulated: {tool_name}",
+                    "parameters": parameters,
+                }
+        except Exception as e:
+            status = "error"
+            raise
+        finally:
+            # Record tool execution metrics
+            duration = time.time() - start_time
+            self.metrics.record_tool_execution(duration, tool_name, status)
 
     async def _execute_create_goal(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Execute goal creation."""
