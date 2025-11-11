@@ -1,7 +1,7 @@
 # XAgent Multi-Agent Concept
 
-**Version**: 1.0  
-**Datum**: 2025-11-10  
+**Version**: 2.0  
+**Datum**: 2025-11-11  
 **Status**: Implementiert ✅
 
 ---
@@ -22,28 +22,35 @@ XAgent ist als **einzelner autonomer Agent** konzipiert, der:
 
 ## 🏗️ Architektur
 
-### 3 Typen von internen Agents
+### 4 Typen von internen Agents
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    XAgent Instance                          │
 │                                                             │
 │  ┌──────────────────────────────────────────────┐          │
-│  │ Main Worker Agent (1, immer vorhanden)       │          │
+│  │ Worker Agent (1, immer vorhanden)            │          │
 │  │ • Primäre Aufgabenausführung                 │          │
-│  │ • Goal-Verarbeitung                          │          │
-│  │ • Tool-Nutzung                               │          │
+│  │ • Tool-Nutzung und Actions                   │          │
+│  │ • Konkrete Implementierung                   │          │
 │  └──────────────────────────────────────────────┘          │
 │                                                             │
 │  ┌──────────────────────────────────────────────┐          │
-│  │ User Interface Agent (1, immer vorhanden)    │          │
-│  │ • Nutzerkommunikation                        │          │
+│  │ Planner Agent (1, immer vorhanden)           │          │
+│  │ • Strategische Planung                       │          │
+│  │ • Goal-Dekomposition                         │          │
+│  │ • Task-Priorisierung                         │          │
+│  └──────────────────────────────────────────────┘          │
+│                                                             │
+│  ┌──────────────────────────────────────────────┐          │
+│  │ Chat Agent (1, immer vorhanden)              │          │
+│  │ • User-Interaktion                           │          │
 │  │ • Command-Routing                            │          │
 │  │ • Status-Reporting                           │          │
 │  └──────────────────────────────────────────────┘          │
 │                                                             │
 │  ┌──────────────────────────────────────────────┐          │
-│  │ Mini-Agents (0-5, temporär)                  │          │
+│  │ Sub-Agents (0-7, temporär)                   │          │
 │  │ • Parallele Subtask-Ausführung               │          │
 │  │ • On-Demand spawning                         │          │
 │  │ • Auto-Terminierung nach Abschluss           │          │
@@ -54,53 +61,67 @@ XAgent ist als **einzelner autonomer Agent** konzipiert, der:
 
 ### Agent-Rollen
 
-#### 1. Main Worker Agent
-**Rolle**: Primäre Ausführung  
+#### 1. Worker Agent
+**Rolle**: Primäre Ausführung und Action  
 **Anzahl**: 1 (immer vorhanden)  
 **Verantwortlichkeiten**:
-- Verarbeitung der Hauptaufgaben
-- Goal-Management
-- Tool-Ausführung
-- Koordination von Mini-Agents
+- Konkrete Aufgabenausführung
+- Tool-Nutzung und API-Calls
+- Code-Execution
+- Koordination von Sub-Agents
+- Implementierung der geplanten Actions
 
-#### 2. User Interface Agent
-**Rolle**: Nutzerkommunikation  
+#### 2. Planner Agent
+**Rolle**: Strategische Planung  
 **Anzahl**: 1 (immer vorhanden)  
 **Verantwortlichkeiten**:
-- Entgegennahme von User-Commands
-- Routing von Anfragen
-- Status-Updates an Nutzer
-- Feedback-Handling
+- Goal-Dekomposition in Subtasks
+- Task-Priorisierung
+- Dependency-Management
+- Plan-Validation
+- Strategische Entscheidungen
 
-#### 3. Mini-Agents
+#### 3. Chat Agent
+**Rolle**: User-Interaktion  
+**Anzahl**: 1 (immer vorhanden)  
+**Verantwortlichkeiten**:
+- User-Communication
+- Command-Routing
+- Status-Updates an User
+- Feedback-Collection
+- Conversational Interface
+
+#### 4. Sub-Agents
 **Rolle**: Temporäre Subtask-Worker  
-**Anzahl**: 0-5 (konfigurierbar, Standard: max 3)  
+**Anzahl**: 0-7 (konfigurierbar, Standard: max 5)  
 **Verantwortlichkeiten**:
 - Ausführung spezifischer Subtasks
 - Parallele Verarbeitung
 - Selbst-Terminierung nach Completion
+- Reporting an Parent-Agent
 
 ---
 
 ## 🎯 Designprinzipien
 
 ### 1. Begrenzte Anzahl
-- **Max 3-5 Mini-Agents** (konfigurierbar)
+- **Max 5-7 Sub-Agents** (konfigurierbar, Standard: 5)
 - Vermeidet Architektur-Overhead
 - Verhindert Koordinationskomplexität
 - Bleibt wartbar und verständlich
 
-### 2. Klare Trennung
-- **Work vs. Communication**: Separate Agents
-- Main Worker konzentriert sich auf Arbeit
-- UI Agent kümmert sich um Nutzer
+### 2. Klare Trennung der Verantwortlichkeiten
+- **Planning vs. Execution vs. Communication**: Separate Agents
+- Planner Agent konzentriert sich auf Strategie
+- Worker Agent konzentriert sich auf Ausführung
+- Chat Agent kümmert sich um User
 - Keine Vermischung der Verantwortlichkeiten
 
 ### 3. Multi-Tasking
-- **Parallele Ausführung**: Arbeit + User-Interaction gleichzeitig
-- Mini-Agents für Subtasks
+- **Parallele Ausführung**: Planning + Execution + User-Interaction gleichzeitig
+- Sub-Agents für parallele Subtasks
 - Keine Blockierung der Hauptarbeit
-- Responsive gegenüber Nutzer
+- Responsive gegenüber User
 
 ### 4. Integrierbarkeit
 - **XAgent als Komponente**: In größere Systeme integrierbar
@@ -115,38 +136,44 @@ XAgent ist als **einzelner autonomer Agent** konzipiert, der:
 ### Use Case 1: Data Processing Pipeline
 
 ```
-Main Worker:      Koordiniert Pipeline-Schritte
-User Interface:   Meldet Fortschritt an Nutzer
-Mini-Agent 1:     Lädt und validiert Daten
-Mini-Agent 2:     Transformiert Daten
-Mini-Agent 3:     Speichert Ergebnisse
+Planner Agent:    Plant Pipeline-Schritte und Strategie
+Worker Agent:     Koordiniert und führt Hauptschritte aus
+Chat Agent:       Meldet Fortschritt an User
+Sub-Agent 1:      Lädt und validiert Daten
+Sub-Agent 2:      Transformiert Daten
+Sub-Agent 3:      Speichert Ergebnisse
 ```
 
-**Vorteil**: Parallel processing während User Updates erhält
+**Vorteil**: Parallel processing mit klarer Trennung von Planning, Execution und Communication
 
 ### Use Case 2: Research Task
 
 ```
-Main Worker:      Plant Research-Strategie
-User Interface:   Beantwortet Nutzerfragen
-Mini-Agent 1:     Sucht akademische Papers
-Mini-Agent 2:     Extrahiert Key Insights
-Mini-Agent 3:     Generiert Bibliographie
+Planner Agent:    Plant Research-Strategie und definiert Ziele
+Worker Agent:     Koordiniert Research-Workflow
+Chat Agent:       Beantwortet User-Fragen interaktiv
+Sub-Agent 1:      Sucht akademische Papers
+Sub-Agent 2:      Extrahiert Key Insights
+Sub-Agent 3:      Generiert Bibliographie
+Sub-Agent 4:      Erstellt Zusammenfassung
 ```
 
-**Vorteil**: Nutzer kann während Recherche Fragen stellen
+**Vorteil**: User kann während Recherche Fragen stellen, Planner optimiert Strategie
 
 ### Use Case 3: Code Review
 
 ```
-Main Worker:      Analysiert Codebase-Struktur
-User Interface:   Liefert Feedback an Developer
-Mini-Agent 1:     Prüft Style-Violations
-Mini-Agent 2:     Analysiert Security-Issues
-Mini-Agent 3:     Schlägt Verbesserungen vor
+Planner Agent:    Definiert Review-Strategie und Checkpoints
+Worker Agent:     Analysiert Codebase-Struktur
+Chat Agent:       Liefert Feedback an Developer interaktiv
+Sub-Agent 1:      Prüft Style-Violations
+Sub-Agent 2:      Analysiert Security-Issues
+Sub-Agent 3:      Prüft Performance-Probleme
+Sub-Agent 4:      Schlägt Refactorings vor
+Sub-Agent 5:      Validiert Tests
 ```
 
-**Vorteil**: Entwickler erhält inkrementelle Ergebnisse
+**Vorteil**: Developer erhält strukturiertes, inkrementelles Feedback mit Chat-Interaktion
 
 ---
 
@@ -158,26 +185,26 @@ Mini-Agent 3:     Schlägt Verbesserungen vor
 from xagent.config import Settings
 
 settings = Settings(
-    max_mini_agents=3  # Standard: 3, Max empfohlen: 5
+    max_sub_agents=5  # Standard: 5, Max empfohlen: 7
 )
 ```
 
 ### Environment Variable
 
 ```bash
-MAX_MINI_AGENTS=3
+MAX_SUB_AGENTS=5
 ```
 
 ### Empfohlene Werte
 
-| Szenario | max_mini_agents | Begründung |
+| Szenario | max_sub_agents | Begründung |
 |----------|----------------|------------|
-| **Development** | 2-3 | Einfaches Debugging |
-| **Production** | 3-5 | Balance zwischen Parallelisierung und Overhead |
-| **Resource-Constrained** | 1-2 | Minimaler Overhead |
-| **High-Parallelism** | 4-5 | Maximale Parallelität (nicht mehr!) |
+| **Development** | 3-4 | Einfaches Debugging |
+| **Production** | 5-7 | Balance zwischen Parallelisierung und Overhead |
+| **Resource-Constrained** | 2-3 | Minimaler Overhead |
+| **High-Parallelism** | 6-7 | Maximale Parallelität (nicht mehr!) |
 
-⚠️ **Warnung**: Werte über 5 werden NICHT empfohlen und können zu:
+⚠️ **Warnung**: Werte über 7 werden NICHT empfohlen und können zu:
 - Koordinations-Overhead führen
 - Performance-Degradation
 - Schwieriger Fehlersuche
@@ -194,14 +221,14 @@ from xagent.core.agent import XAgent
 agent = XAgent()
 await agent.initialize()
 
-# Spawn mini-agent für Subtask
-mini_agent_id = await agent.spawn_subtask_agent(
+# Spawn sub-agent für Subtask
+sub_agent = agent.agent_coordinator.spawn_sub_agent(
     task_description="Analyze data patterns",
-    parent_goal_id="goal_123"
+    parent_agent_id="worker"
 )
 
-if mini_agent_id:
-    print(f"Spawned: {mini_agent_id}")
+if sub_agent:
+    print(f"Spawned: {sub_agent.id}")
 else:
     print("Limit reached")
 ```
@@ -209,18 +236,21 @@ else:
 ### Agent Termination
 
 ```python
-# Terminiere mini-agent nach Completion
-success = await agent.terminate_subtask_agent(mini_agent_id)
+# Terminiere sub-agent nach Completion
+success = agent.agent_coordinator.terminate_sub_agent(sub_agent.id)
 ```
 
 ### Status Abfrage
 
 ```python
-status = await agent.get_status()
+status = agent.agent_coordinator.get_status()
 
-print(f"Mini-Agents: {status['agents']['mini_agents_count']}/{status['agents']['mini_agents_limit']}")
-for mini in status['agents']['mini_agents']:
-    print(f"  - {mini['id']}: {mini['current_task']}")
+print(f"Worker: {status['worker']['id']}")
+print(f"Planner: {status['planner']['id']}")
+print(f"Chat: {status['chat']['id']}")
+print(f"Sub-Agents: {status['sub_agents_count']}/{status['sub_agents_limit']}")
+for sub in status['sub_agents']:
+    print(f"  - {sub['id']}: {sub['current_task']}")
 ```
 
 ---
@@ -229,22 +259,24 @@ for mini in status['agents']['mini_agents']:
 
 ### Benchmarks
 
-| Metrik | Ohne Mini-Agents | Mit 3 Mini-Agents | Verbesserung |
+| Metrik | Ohne Sub-Agents | Mit 5 Sub-Agents | Verbesserung |
 |--------|------------------|-------------------|--------------|
-| **Subtask Parallelisierung** | Sequentiell | 3x parallel | ~3x schneller |
+| **Subtask Parallelisierung** | Sequentiell | 5x parallel | ~5x schneller |
 | **User Responsiveness** | Blockiert | Non-blocking | ∞ besser |
-| **Overhead** | 0% | ~5-10% | Akzeptabel |
+| **Overhead** | 0% | ~8-12% | Akzeptabel |
 | **Koordinations-Komplexität** | Minimal | Niedrig | Wartbar |
 
 ### Memory Usage
 
 ```
 Base XAgent:          ~50 MB
-+ Main Worker:        ~10 MB
-+ User Interface:     ~5 MB
-+ Mini-Agent (each):  ~8 MB
++ Worker Agent:       ~10 MB
++ Planner Agent:      ~8 MB
++ Chat Agent:         ~5 MB
++ Sub-Agent (each):   ~8 MB
 
-Total (3 mini):       ~89 MB (akzeptabel)
+Total (5 subs):       ~113 MB (akzeptabel)
+Total (7 subs):       ~129 MB (maximum)
 ```
 
 ---
@@ -255,7 +287,7 @@ Total (3 mini):       ~89 MB (akzeptabel)
 
 ```
 Fokus:              Einzelner autonomer Agent
-Interne Agents:     2 Core + 3-5 Mini
+Interne Agents:     3 Core (Worker, Planner, Chat) + 5-7 Sub-Agents
 Koordination:       Begrenzt, intern
 Use Case:           Fokussierte Aufgaben mit Multi-Tasking
 Integration:        Als Komponente in größeren Systemen
@@ -286,8 +318,8 @@ Integration:        Orchestriert mehrere XAgents
 └─────────────────────────────────────────┘
 
 Jeder XAgent:
-- Hat 2 Core Agents (Worker + UI)
-- Kann 3-5 Mini-Agents spawnen
+- Hat 3 Core Agents (Worker + Planner + Chat)
+- Kann 5-7 Sub-Agents spawnen
 - Bleibt fokussiert und leichtgewichtig
 - Kommuniziert via XTeam
 ```
@@ -298,19 +330,20 @@ Jeder XAgent:
 
 ### DO ✓
 
-- **Nutze Mini-Agents für parallele Subtasks**
-- **Halte die Anzahl unter 5**
-- **Terminiere Mini-Agents nach Completion**
-- **Nutze Main Worker für Koordination**
-- **Nutze UI Agent für User-Communication**
+- **Nutze Sub-Agents für parallele Subtasks**
+- **Halte die Anzahl unter 7**
+- **Terminiere Sub-Agents nach Completion**
+- **Nutze Planner für strategische Entscheidungen**
+- **Nutze Worker für konkrete Ausführung**
+- **Nutze Chat Agent für User-Communication**
 
 ### DON'T ✗
 
-- **Spawne nicht mehr als 5 Mini-Agents**
-- **Verwende keine Mini-Agents für lange Tasks**
+- **Spawne nicht mehr als 7 Sub-Agents**
+- **Verwende keine Sub-Agents für lange Tasks**
 - **Baue keine komplexe Agent-Hierarchie**
 - **Versuch nicht, XAgent als Full Multi-Agent-System zu nutzen**
-- **Vergiss nicht, Mini-Agents zu terminieren**
+- **Vergiss nicht, Sub-Agents zu terminieren**
 
 ---
 
@@ -412,6 +445,7 @@ Feedback zur Multi-Agent-Koordination ist willkommen! Bitte erstelle ein Issue m
 ---
 
 **Erstellt**: 2025-11-10  
-**Version**: 1.0  
+**Aktualisiert**: 2025-11-11  
+**Version**: 2.0  
 **Status**: ✅ Implementiert und getestet  
 **Autor**: XAgent Development Team

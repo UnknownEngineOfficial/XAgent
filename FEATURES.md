@@ -9,6 +9,25 @@
 
 ---
 
+## 🤖 Multi-Agent Architektur
+
+**XAgent nutzt ein spezialisiertes Multi-Agent-System mit folgenden Rollen:**
+
+### Core Agents (immer vorhanden)
+1. **Worker Agent** - Führt konkrete Aufgaben und Actions aus
+2. **Planner Agent** - Erstellt strategische Pläne und dekomponiert Goals
+3. **Chat Agent** - Interagiert mit dem User und managed Communication
+
+### Sub-Agents (temporär, max 5-7)
+- **Sub-Agents** - Temporäre Agents für parallele Subtask-Ausführung
+- Spawned on-demand für spezifische Aufgaben
+- Auto-terminieren nach Completion
+- Konfigurierbar: max 5 (default) bis 7 (empfohlen)
+
+**Siehe auch**: [MULTI_AGENT_CONCEPT.md](MULTI_AGENT_CONCEPT.md) für Details
+
+---
+
 ## 📊 Current Status Overview
 
 ### Gesamtstatus
@@ -221,7 +240,7 @@
   - Main Agent Class mit Component Integration
   - Dual Planner Support (Legacy + LangGraph)
   - Konfigurierbare Planner-Auswahl via Settings
-  - Agent Coordinator für Mini-Agents (max 3 default)
+  - Agent Coordinator für Multi-Agent System (3 Core + max 5-7 Sub-Agents)
   - Graceful Initialization und Shutdown
   
 - **Executor** (`src/xagent/core/executor.py`)
@@ -250,7 +269,7 @@
 - **2025-11-07**: Initial implementation mit async/await Pattern
 - **2025-11-07**: State Machine für CognitiveState hinzugefügt
 - **2025-11-07**: Perception Queue implementiert für reactive Inputs
-- **2025-11-11**: Agent Coordinator für Mini-Agents hinzugefügt
+- **2025-11-11**: Agent Coordinator für Multi-Agent System hinzugefügt (Worker, Planner, Chat + Sub-Agents)
 
 ### Next Steps
 
