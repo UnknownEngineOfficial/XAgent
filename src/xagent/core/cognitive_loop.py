@@ -1,6 +1,7 @@
 """Cognitive Loop - The continuous thinking process of X-Agent."""
 
 import asyncio
+import time
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, cast
@@ -8,6 +9,7 @@ from typing import Any, cast
 from xagent.config import settings
 from xagent.core.goal_engine import GoalEngine, GoalStatus
 from xagent.memory.memory_layer import MemoryLayer
+from xagent.monitoring.metrics import MetricsCollector
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -71,6 +73,11 @@ class CognitiveLoop:
         # Perception queue for inputs
         self.perception_queue: asyncio.Queue = asyncio.Queue()
 
+        # Metrics tracking
+        self.metrics = MetricsCollector()
+        self.start_time: float | None = None
+        self.task_results: list[bool] = []  # Track last 100 task results
+
     async def start(self) -> None:
         """Start the cognitive loop."""
         if self.running:
@@ -79,6 +86,7 @@ class CognitiveLoop:
 
         self.running = True
         self.state = CognitiveState.THINKING
+        self.start_time = time.time()
         logger.info("Cognitive loop started")
 
         # Run the main loop
@@ -103,8 +111,17 @@ class CognitiveLoop:
     async def _loop(self) -> None:
         """Main cognitive loop."""
         while self.running and self.iteration_count < self.max_iterations:
+            loop_start = time.time()
+            iteration_success = True
+            decision_start = time.time()
+
             try:
                 self.iteration_count += 1
+
+                # Update uptime metric
+                if self.start_time:
+                    uptime = time.time() - self.start_time
+                    self.metrics.update_agent_uptime(uptime)
 
                 # Phase 1: Perception
                 self.current_phase = LoopPhase.PERCEPTION
@@ -122,7 +139,17 @@ class CognitiveLoop:
                 if plan:
                     self.current_phase = LoopPhase.EXECUTION
                     self.state = CognitiveState.ACTING
+                    
+                    # Record decision latency (perception to execution start)
+                    decision_latency = time.time() - decision_start
+                    self.metrics.record_decision_latency(decision_latency)
+                    
                     result = await self._execute(plan)
+
+                    # Track task success
+                    task_success = result.get("success", False)
+                    self.metrics.record_task_result(task_success)
+                    self._update_task_success_rate(task_success)
 
                     # Phase 5: Reflection
                     self.current_phase = LoopPhase.REFLECTION
@@ -134,7 +161,14 @@ class CognitiveLoop:
 
             except Exception as e:
                 logger.error(f"Error in cognitive loop: {e}", exc_info=True)
+                iteration_success = False
                 await asyncio.sleep(1)  # Prevent tight error loop
+
+            finally:
+                # Record cognitive loop duration and status
+                loop_duration = time.time() - loop_start
+                status = "success" if iteration_success else "error"
+                self.metrics.record_cognitive_loop(loop_duration, status)
 
         logger.info(f"Cognitive loop ended after {self.iteration_count} iterations")
 
@@ -319,3 +353,24 @@ class CognitiveLoop:
 
         # Log reflection
         logger.debug(f"Reflection - Success: {success}, Iteration: {self.iteration_count}")
+
+    def _update_task_success_rate(self, success: bool) -> None:
+        """
+        Update the rolling task success rate.
+        
+        Keeps track of the last 100 task results and calculates success rate.
+        
+        Args:
+            success: Whether the task succeeded
+        """
+        # Add to results list
+        self.task_results.append(success)
+        
+        # Keep only last 100 results
+        if len(self.task_results) > 100:
+            self.task_results = self.task_results[-100:]
+        
+        # Calculate success rate
+        if self.task_results:
+            success_rate = (sum(1 for r in self.task_results if r) / len(self.task_results)) * 100
+            self.metrics.update_task_success_rate(success_rate)
