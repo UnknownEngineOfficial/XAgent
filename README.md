@@ -99,6 +99,47 @@ Diese Schleife läuft permanent, ähnlich einem Bewusstseins-Takt:
 
 ---
 
+### 2.5 Multi-Agent Architektur (Agent Roles)
+
+XAgent nutzt ein spezialisiertes Multi-Agent-System für effiziente Aufgabenteilung:
+
+#### Core Agents (immer aktiv)
+
+1. **Worker Agent**
+   - Führt konkrete Aufgaben und Actions aus
+   - Nutzt Tools und APIs
+   - Implementiert geplante Schritte
+   - Koordiniert Sub-Agents
+
+2. **Planner Agent**
+   - Erstellt strategische Pläne
+   - Dekomponiert Goals in Subtasks
+   - Priorisiert Tasks
+   - Validiert Plan-Qualität
+
+3. **Chat Agent**
+   - Interagiert mit dem User
+   - Routet Commands
+   - Gibt Status-Updates
+   - Sammelt Feedback
+
+#### Sub-Agents (temporär, 0-7)
+
+- Spawned on-demand für parallele Subtask-Ausführung
+- Auto-terminieren nach Completion
+- Konfigurierbar: max 5 (default) bis 7 (maximum)
+- Ermöglichen paralleles Multi-Tasking
+
+**Vorteile**:
+- Klare Trennung von Planning, Execution und Communication
+- Parallele Ausführung von Subtasks
+- User bleibt responsive während Agent arbeitet
+- Fokussierte, wartbare Architektur
+
+**Details**: Siehe [MULTI_AGENT_CONCEPT.md](MULTI_AGENT_CONCEPT.md)
+
+---
+
 ### 3. Gedächtnissystem (Memory Layer)
 
 Mehrschichtig aufgebaut:
