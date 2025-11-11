@@ -1,4 +1,0 @@
-# file: /home/runner/work/XAgent/XAgent/src/xagent/__init__.py
-# hypothesis_version: 6.147.0
-
-['0.1.0', 'CognitiveLoop', 'GoalEngine', 'XAgent', 'XTeam']

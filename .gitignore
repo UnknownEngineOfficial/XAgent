@@ -55,6 +55,7 @@ coverage.xml
 htmlcov/
 .pytest_cache/
 .tox/
+.hypothesis/
 
 # Generated reports
 test_report.html
