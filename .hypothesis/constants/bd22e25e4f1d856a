@@ -1,0 +1,4 @@
+# file: /home/runner/work/XAgent/XAgent/src/xagent/utils/logging.py
+# hypothesis_version: 6.147.0
+
+['iso', 'logs', 'span_id', 'trace_id']

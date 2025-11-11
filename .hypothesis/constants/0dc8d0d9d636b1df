@@ -1,0 +1,4 @@
+# file: /home/runner/work/XAgent/XAgent/src/xagent/core/goal_engine.py
+# hypothesis_version: 6.147.0
+
+['completed', 'completed_at', 'completion_criteria', 'continuous', 'created_at', 'description', 'failed', 'goal', 'goal_oriented', 'id', 'in_progress', 'metadata', 'mode', 'parent_id', 'paused', 'pending', 'priority', 'status', 'sub_goals', 'updated_at']
