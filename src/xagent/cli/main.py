@@ -392,6 +392,196 @@ def version() -> None:
     )
 
 
+@app.command(name="completion")
+def install_completion(
+    shell: Annotated[
+        str,
+        typer.Argument(help="Shell type: bash, zsh, fish, or powershell"),
+    ] = "bash",
+    install: Annotated[
+        bool,
+        typer.Option("--install/--show", help="Install completion or just show instructions"),
+    ] = False,
+) -> None:
+    """
+    Install or show shell completion instructions.
+    
+    Supports bash, zsh, fish, and powershell.
+    
+    Examples:
+        # Show bash completion instructions
+        xagent completion bash
+        
+        # Install bash completion
+        xagent completion bash --install
+        
+        # Show zsh completion instructions
+        xagent completion zsh
+    """
+    shell = shell.lower()
+    
+    if shell not in ["bash", "zsh", "fish", "powershell"]:
+        console.print(f"[red]Error:[/red] Unsupported shell: {shell}", style="bold red")
+        console.print("Supported shells: bash, zsh, fish, powershell")
+        raise typer.Exit(1)
+    
+    if install:
+        # Try to install completion
+        import os
+        import subprocess
+        from pathlib import Path
+        
+        try:
+            if shell == "bash":
+                # Install bash completion
+                completion_dir = Path.home() / ".bash_completion.d"
+                completion_dir.mkdir(exist_ok=True)
+                completion_file = completion_dir / "xagent"
+                
+                # Generate completion script
+                result = subprocess.run(
+                    ["xagent", "--show-completion", "bash"],
+                    capture_output=True,
+                    text=True,
+                )
+                
+                if result.returncode == 0:
+                    completion_file.write_text(result.stdout)
+                    
+                    # Add source to .bashrc if not already there
+                    bashrc = Path.home() / ".bashrc"
+                    bashrc_content = bashrc.read_text() if bashrc.exists() else ""
+                    
+                    source_line = f"source {completion_file}\n"
+                    if source_line not in bashrc_content:
+                        with bashrc.open("a") as f:
+                            f.write(f"\n# X-Agent shell completion\n{source_line}")
+                    
+                    console.print(f"[green]✓[/green] Bash completion installed to {completion_file}")
+                    console.print("\n[yellow]Run:[/yellow] source ~/.bashrc")
+                    console.print("[dim]Or restart your terminal[/dim]")
+                else:
+                    raise Exception(result.stderr)
+                    
+            elif shell == "zsh":
+                # Install zsh completion
+                completion_dir = Path.home() / ".zsh" / "completion"
+                completion_dir.mkdir(parents=True, exist_ok=True)
+                completion_file = completion_dir / "_xagent"
+                
+                # Generate completion script
+                result = subprocess.run(
+                    ["xagent", "--show-completion", "zsh"],
+                    capture_output=True,
+                    text=True,
+                )
+                
+                if result.returncode == 0:
+                    completion_file.write_text(result.stdout)
+                    
+                    # Add to fpath in .zshrc if not already there
+                    zshrc = Path.home() / ".zshrc"
+                    zshrc_content = zshrc.read_text() if zshrc.exists() else ""
+                    
+                    fpath_line = f'fpath=({completion_dir} $fpath)\n'
+                    if str(completion_dir) not in zshrc_content:
+                        with zshrc.open("a") as f:
+                            f.write(f"\n# X-Agent shell completion\n{fpath_line}")
+                            f.write("autoload -Uz compinit && compinit\n")
+                    
+                    console.print(f"[green]✓[/green] Zsh completion installed to {completion_file}")
+                    console.print("\n[yellow]Run:[/yellow] source ~/.zshrc")
+                    console.print("[dim]Or restart your terminal[/dim]")
+                else:
+                    raise Exception(result.stderr)
+                    
+            elif shell == "fish":
+                # Install fish completion
+                completion_dir = Path.home() / ".config" / "fish" / "completions"
+                completion_dir.mkdir(parents=True, exist_ok=True)
+                completion_file = completion_dir / "xagent.fish"
+                
+                # Generate completion script
+                result = subprocess.run(
+                    ["xagent", "--show-completion", "fish"],
+                    capture_output=True,
+                    text=True,
+                )
+                
+                if result.returncode == 0:
+                    completion_file.write_text(result.stdout)
+                    console.print(f"[green]✓[/green] Fish completion installed to {completion_file}")
+                    console.print("\n[dim]Fish will automatically load completions[/dim]")
+                else:
+                    raise Exception(result.stderr)
+                    
+            elif shell == "powershell":
+                console.print("[yellow]PowerShell completion installation:[/yellow]")
+                console.print("1. Run: xagent --show-completion powershell > xagent_completion.ps1")
+                console.print("2. Add to your PowerShell profile:")
+                console.print("   . /path/to/xagent_completion.ps1")
+                
+        except Exception as e:
+            console.print(f"[red]Error installing completion:[/red] {e}", style="bold red")
+            console.print("\n[yellow]Try manual installation instead:[/yellow]")
+            console.print(f"xagent completion {shell}")
+            raise typer.Exit(1)
+    else:
+        # Show installation instructions
+        console.print(
+            Panel.fit(
+                f"[bold cyan]Shell Completion for {shell.upper()}[/bold cyan]",
+                border_style="cyan",
+            )
+        )
+        
+        if shell == "bash":
+            console.print("\n[bold]Option 1: Automatic Installation[/bold]")
+            console.print("  xagent completion bash --install")
+            
+            console.print("\n[bold]Option 2: Manual Installation[/bold]")
+            console.print("  # Generate completion script")
+            console.print("  xagent --show-completion bash > ~/.bash_completion.d/xagent")
+            console.print("\n  # Add to ~/.bashrc")
+            console.print("  echo 'source ~/.bash_completion.d/xagent' >> ~/.bashrc")
+            console.print("\n  # Reload")
+            console.print("  source ~/.bashrc")
+            
+        elif shell == "zsh":
+            console.print("\n[bold]Option 1: Automatic Installation[/bold]")
+            console.print("  xagent completion zsh --install")
+            
+            console.print("\n[bold]Option 2: Manual Installation[/bold]")
+            console.print("  # Create completion directory")
+            console.print("  mkdir -p ~/.zsh/completion")
+            console.print("\n  # Generate completion script")
+            console.print("  xagent --show-completion zsh > ~/.zsh/completion/_xagent")
+            console.print("\n  # Add to ~/.zshrc")
+            console.print("  echo 'fpath=(~/.zsh/completion $fpath)' >> ~/.zshrc")
+            console.print("  echo 'autoload -Uz compinit && compinit' >> ~/.zshrc")
+            console.print("\n  # Reload")
+            console.print("  source ~/.zshrc")
+            
+        elif shell == "fish":
+            console.print("\n[bold]Option 1: Automatic Installation[/bold]")
+            console.print("  xagent completion fish --install")
+            
+            console.print("\n[bold]Option 2: Manual Installation[/bold]")
+            console.print("  # Generate completion script")
+            console.print("  xagent --show-completion fish > ~/.config/fish/completions/xagent.fish")
+            console.print("\n  # Fish will automatically load completions")
+            
+        elif shell == "powershell":
+            console.print("\n[bold]Manual Installation[/bold]")
+            console.print("  # Generate completion script")
+            console.print("  xagent --show-completion powershell > xagent_completion.ps1")
+            console.print("\n  # Add to your PowerShell profile")
+            console.print("  echo '. /path/to/xagent_completion.ps1' >> $PROFILE")
+            
+        console.print("\n[bold green]After installation:[/bold green]")
+        console.print("  Try: xagent [TAB][TAB]")
+
+
 def main() -> None:
     """Main entry point for CLI."""
     app()

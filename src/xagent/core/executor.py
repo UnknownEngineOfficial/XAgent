@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, cast
 
+from xagent.core.internal_rate_limiting import get_internal_rate_limiter
 from xagent.monitoring.metrics import MetricsCollector
 from xagent.utils.logging import get_logger
 
@@ -26,6 +27,7 @@ class Executor:
         """
         self.tool_server = tool_server
         self.metrics = MetricsCollector()
+        self.rate_limiter = get_internal_rate_limiter()
 
     async def execute(self, plan: dict[str, Any]) -> dict[str, Any]:
         """
@@ -86,6 +88,15 @@ class Executor:
         self, tool_name: str, parameters: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute tool call."""
+        # Check rate limit before executing tool
+        if not await self.rate_limiter.check_tool_call_limit():
+            logger.warning(f"Tool call rate limited: {tool_name}")
+            return {
+                "message": f"Tool call rate limited: {tool_name}",
+                "tool": tool_name,
+                "rate_limited": True,
+            }
+
         start_time = time.time()
         status = "success"
         
