@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from xagent.config import settings
 from xagent.core.goal_engine import GoalEngine, GoalStatus
+from xagent.core.internal_rate_limiting import get_internal_rate_limiter
 from xagent.memory.memory_layer import MemoryLayer
 from xagent.monitoring.metrics import MetricsCollector
 from xagent.utils.logging import get_logger
@@ -88,6 +89,9 @@ class CognitiveLoop:
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.last_checkpoint_iteration = 0
 
+        # Internal rate limiter
+        self.rate_limiter = get_internal_rate_limiter()
+
     async def start(self, resume_from_checkpoint: bool = True) -> None:
         """
         Start the cognitive loop.
@@ -137,6 +141,12 @@ class CognitiveLoop:
     async def _loop(self) -> None:
         """Main cognitive loop."""
         while self.running and self.iteration_count < self.max_iterations:
+            # Check internal rate limit before starting iteration
+            if not await self.rate_limiter.check_iteration_limit():
+                # Rate limit exceeded, cooldown was applied
+                logger.info("Rate limit applied, continuing after cooldown")
+                continue
+
             loop_start = time.time()
             iteration_success = True
             decision_start = time.time()

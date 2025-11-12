@@ -173,10 +173,22 @@
 
 ### Medium Priority
 
-2. **Rate Limiting nur API-Level**
-   - **Problem**: Kein Schutz vor internen Loop-Überlasten
-   - **Impact**: Mögliche Resource Exhaustion
-   - **Aufwand**: 2-3 Tage
+~~2. **Rate Limiting nur API-Level**~~ ✅ **GELÖST (2025-11-12)**
+   - **Status**: ✅ Vollständig implementiert
+   - **Lösung**: Internal Rate Limiting System mit Token Bucket Algorithm
+   - **Features**:
+     - Cognitive Loop Rate Limiting (per minute & per hour)
+     - Tool Call Rate Limiting
+     - Memory Operation Rate Limiting
+     - Independent token buckets for each operation type
+     - Configurable limits and cooldown periods
+     - Comprehensive statistics and monitoring
+   - **Tests**: 30/30 Tests bestanden
+   - **Files**: 
+     - `src/xagent/core/internal_rate_limiting.py` (Implementation)
+     - `tests/unit/test_internal_rate_limiting.py` (Tests)
+   - **Documentation**: `docs/INTERNAL_RATE_LIMITING.md`
+   - **Integration**: Cognitive Loop, Executor, Memory Layer
 
 3. **Keine Helm Charts für Kubernetes**
    - **Problem**: K8s Manifests vorhanden, aber keine Helm Abstraktion

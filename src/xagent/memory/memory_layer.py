@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from xagent.config import settings
+from xagent.core.internal_rate_limiting import get_internal_rate_limiter
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -74,6 +75,7 @@ class ShortTermMemory(MemoryStore):
     def __init__(self) -> None:
         """Initialize short-term memory."""
         self.redis: aioredis.Redis | None = None
+        self.rate_limiter = get_internal_rate_limiter()
 
     async def connect(self) -> None:
         """Connect to Redis."""
@@ -103,6 +105,11 @@ class ShortTermMemory(MemoryStore):
             value: Value to store
             ttl: Time to live in seconds (default: 3600 = 1 hour)
         """
+        # Check rate limit for memory operations
+        if not await self.rate_limiter.check_memory_operation_limit():
+            logger.warning(f"Memory save operation rate limited: {key}")
+            return
+
         if not self.redis:
             await self.connect()
 
@@ -122,6 +129,11 @@ class ShortTermMemory(MemoryStore):
 
     async def get(self, key: str) -> Any | None:
         """Get from short-term memory."""
+        # Check rate limit for memory operations
+        if not await self.rate_limiter.check_memory_operation_limit():
+            logger.warning(f"Memory get operation rate limited: {key}")
+            return None
+
         if not self.redis:
             await self.connect()
 

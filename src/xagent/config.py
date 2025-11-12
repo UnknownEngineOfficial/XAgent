@@ -78,6 +78,14 @@ class Settings(BaseSettings):
     rate_limit_default: int = Field(default=100, description="Default rate limit per minute")
     rate_limit_burst: int = Field(default=120, description="Default burst size")
 
+    # Internal Rate Limiting (for cognitive loop and internal operations)
+    internal_rate_limiting_enabled: bool = Field(default=True, description="Enable internal rate limiting")
+    max_iterations_per_minute: int = Field(default=60, description="Max cognitive loop iterations per minute")
+    max_iterations_per_hour: int = Field(default=1000, description="Max cognitive loop iterations per hour")
+    max_tool_calls_per_minute: int = Field(default=100, description="Max tool calls per minute")
+    max_memory_ops_per_minute: int = Field(default=200, description="Max memory operations per minute")
+    rate_limit_cooldown: float = Field(default=5.0, description="Cooldown in seconds when rate limit is hit")
+
     # OPA (Open Policy Agent) Configuration
     opa_url: str = Field(default="http://localhost:8181", description="OPA server URL")
     opa_enabled: bool = Field(default=False, description="Enable OPA policy enforcement")
