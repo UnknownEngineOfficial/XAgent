@@ -14,6 +14,7 @@ from langchain.tools import tool
 from pydantic import BaseModel, Field
 
 from xagent.sandbox.docker_sandbox import DockerSandbox
+from xagent.tools.http_client import HttpClient, HttpMethod, get_http_client
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -387,59 +388,76 @@ async def http_request(
     url: str,
     method: str = "GET",
     headers: dict[str, str] | None = None,
-    body: str | None = None,
+    body: str | dict | None = None,
     timeout: int = 30,
 ) -> dict[str, Any]:
     """
-    Make an HTTP request to an API endpoint.
+    Make a secure HTTP request to an API endpoint.
 
-    This tool allows making custom HTTP requests with different methods,
-    headers, and body content. Useful for API integration.
+    This tool uses a secure HTTP client with:
+    - Domain allowlist for security
+    - Circuit breaker pattern to prevent cascading failures
+    - Secret redaction in logs
+    - Request/response validation
 
     Args:
-        url: URL to send the request to
-        method: HTTP method (GET, POST, PUT, DELETE, etc.)
-        headers: Optional HTTP headers
-        body: Optional request body for POST/PUT
-        timeout: Request timeout in seconds
+        url: URL to send the request to (must be in domain allowlist)
+        method: HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
+        headers: Optional HTTP headers (secrets will be redacted in logs)
+        body: Optional request body for POST/PUT/PATCH (string or dict for JSON)
+        timeout: Request timeout in seconds (1-300)
 
     Returns:
         Dictionary with:
         - status: "success" or "error"
         - status_code: HTTP status code
         - headers: Response headers
-        - content: Response body
+        - body: Response body (parsed JSON if applicable)
+        - url: Final URL (after redirects)
+        - elapsed_ms: Request duration in milliseconds
         - error: Error message if any
     """
     try:
-        async with httpx.AsyncClient(timeout=float(timeout)) as client:
-            request_kwargs = {
-                "method": method.upper(),
-                "url": url,
-                "headers": headers or {},
-            }
+        # Get HTTP client with security features
+        client = get_http_client()
 
-            if body and method.upper() in ["POST", "PUT", "PATCH"]:
-                request_kwargs["content"] = body
-
-            response = await client.request(**request_kwargs)
-
-            # Try to get text content
-            try:
-                content = response.text
-            except Exception:
-                content = f"<binary content, {len(response.content)} bytes>"
-
-            logger.info(f"HTTP {method} {url} -> {response.status_code}")
-
+        # Convert method string to enum
+        try:
+            http_method = HttpMethod[method.upper()]
+        except KeyError:
             return {
-                "status": "success",
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "content": content,
-                "url": str(response.url),
+                "status": "error",
+                "error": f"Unsupported HTTP method: {method}. Supported: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS",
+                "url": url,
             }
 
+        # Make secure request
+        result = await client.request(
+            method=http_method,
+            url=url,
+            headers=headers,
+            body=body,
+            timeout=timeout,
+        )
+
+        logger.info(
+            f"HTTP {method} {url} -> {result['status_code']}",
+            extra={"elapsed_ms": result.get("elapsed_ms")}
+        )
+
+        return {
+            "status": "success",
+            **result,
+        }
+
+    except ValueError as e:
+        # Domain not allowed or circuit breaker open
+        logger.warning(f"HTTP request blocked: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "url": url,
+        }
     except httpx.HTTPError as e:
         logger.error(f"HTTP error: {e}")
         return {
