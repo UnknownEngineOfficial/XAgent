@@ -325,15 +325,17 @@
 
 ### Next Steps
 
-- [ ] **Checkpoint/Resume Mechanismus implementieren** (3 Tage)
-  - State Serialization in PostgreSQL
+- [x] ~~**Checkpoint/Resume Mechanismus implementieren**~~ ✅ **GELÖST (2025-11-11)**
+  - State Serialization in JSON/Pickle
   - Automatic Checkpointing alle N Iterationen
   - Resume from last Checkpoint bei Restart
   
-- [ ] **Watchdog/Supervisor für Long-Running Tasks** (2 Tage)
-  - Timeout Detection
+- [x] ~~**Watchdog/Supervisor für Long-Running Tasks**~~ ✅ **GELÖST (2025-11-12)**
+  - Timeout Detection and Enforcement
   - Automatic Task Cancellation
   - Retry Logic mit Exponential Backoff
+  - Event Callbacks (on_complete, on_error, on_timeout)
+  - Task Metrics Collection
   
 - [ ] **Performance Optimierung** (2 Tage)
   - Loop Iteration Profiling
@@ -344,8 +346,8 @@
 
 - ✅ Loop läuft kontinuierlich ohne Crashes (> 1000 Iterationen)
 - ✅ State Transitions sind korrekt und nachvollziehbar
-- ⚠️ Loop kann von letztem Checkpoint innerhalb 30s nach Crash restarten
-- ⚠️ Supervisor erkennt und handhabt Timeouts (> 5 Minuten) automatisch
+- ✅ Loop kann von letztem Checkpoint innerhalb 30s nach Crash restarten
+- ✅ Supervisor erkennt und handhabt Timeouts (> 5 Minuten) automatisch
 - ✅ Test Coverage >= 90% für cognitive_loop.py
 
 ---
@@ -533,13 +535,14 @@
 - LangChain @tool Decorator Integration
 - Pydantic v2 Input Validation Schemas
 - Docker Sandbox Integration für Code Execution
-- **6 Production-Ready Tools**:
+- **7 Production-Ready Tools**:
   1. **execute_code**: Sandboxed Code Execution (Python, JS, TS, Bash, Go)
   2. **think**: Agent Reasoning Recording
   3. **search**: Web/Knowledge Search
   4. **read_file**: File Reading
   5. **write_file**: File Writing
   6. **manage_goal**: Goal CRUD Operations
+  7. **http_request**: Secure HTTP API Client (NEW ✅ 2025-11-12)
 
 #### Docker Sandbox (`src/xagent/sandbox/docker_sandbox.py`)
 - Isolated Code Execution Environment
@@ -553,26 +556,41 @@
 - Tool Execution Abstraction
 - Error Handling & Retry Logic
 
+#### HTTP Client (`src/xagent/tools/http_client.py`) ✅ **NEW (2025-11-12)**
+- Secure HTTP/HTTPS Requests (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
+- Circuit Breaker Pattern für Resilience
+- Domain Allowlist für Security
+- Secret Redaction in Logs
+- Per-Domain Circuit State Management
+- Comprehensive Error Handling
+
 ### Files
 
 - **Implementation**:
   - `src/xagent/tools/langserve_tools.py`
   - `src/xagent/sandbox/docker_sandbox.py`
   - `src/xagent/tools/tool_server.py`
+  - `src/xagent/tools/http_client.py` ✅ **NEW**
   
 - **Tests**:
   - `tests/integration/test_langserve_tools.py` (LangServe Integration Tests)
   - `tests/unit/test_docker_sandbox.py` (10 Tests für Sandbox)
+  - `tests/unit/test_http_client.py` (25+ Tests) ✅ **NEW**
 
 - **Examples**:
   - `examples/tool_server_usage.py`
   - `examples/tool_execution_demo.py`
+  - `examples/http_client_demo.py` ✅ **NEW**
+  
+- **Documentation**:
+  - `docs/HTTP_CLIENT.md` (12KB) ✅ **NEW**
 
 ### Changes Log
 
 - **2025-11-07**: Tool Server Grundstruktur erstellt
 - **2025-11-08**: LangServe Tools implementiert (6 Tools)
 - **2025-11-08**: Docker Sandbox für sichere Code-Ausführung hinzugefügt
+- **2025-11-12**: HTTP Client Tool mit Circuit Breaker & Domain Allowlist ✅
 
 ### Next Steps
 
@@ -581,8 +599,8 @@
   - Auto-Discovery von Tool Modules
   - Dynamic Tool Loading
   
-- [ ] **Advanced Tool Capabilities** (5 Tage)
-  - HTTP API Calls (GET, POST, PUT, DELETE)
+- [ ] **Advanced Tool Capabilities** (3 Tage)
+  - ~~HTTP API Calls (GET, POST, PUT, DELETE)~~ ✅ **GELÖST (2025-11-12)**
   - Database Queries (SQL, NoSQL)
   - Git Operations (clone, commit, push, pull)
   - Cloud Provider APIs (AWS, GCP, Azure)
@@ -596,7 +614,9 @@
 ### Acceptance Criteria
 
 - ✅ Docker Sandbox führt Code sicher aus ohne Host-System zu gefährden
-- ✅ Alle 6 Tools funktionieren in Integration Tests
+- ✅ Alle 7 Tools funktionieren in Integration Tests
+- ✅ HTTP Client blockiert nicht-erlaubte Domains
+- ✅ Circuit Breaker öffnet nach wiederholten Failures
 - ⚠️ Tool Execution Latency < 5 Sekunden (95th percentile)
 - ⚠️ Tool Success Rate > 90% über 100 Calls
 - ✅ Test Coverage >= 80% für Tool Module
