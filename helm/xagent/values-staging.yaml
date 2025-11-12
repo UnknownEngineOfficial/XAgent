@@ -1,0 +1,222 @@
+# Staging values for xagent
+# Reduced resources and replica counts for staging environment
+
+## Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+## X-Agent API configuration (Staging)
+api:
+  replicaCount: 2
+  
+  image:
+    repository: xagent/api
+    pullPolicy: Always  # Always pull latest in staging
+    tag: "develop"
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    annotations:
+      prometheus.io/scrape: "true"
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+## WebSocket configuration (Staging)
+websocket:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: xagent/websocket
+    pullPolicy: Always
+    tag: "develop"
+  
+  service:
+    type: ClusterIP
+    port: 8001
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+## Worker configuration (Staging)
+worker:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: xagent/worker
+    pullPolicy: Always
+    tag: "develop"
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+## Ingress configuration (Staging)
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: staging.xagent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+        - path: /ws
+          pathType: Prefix
+          service: websocket
+  tls:
+    - secretName: xagent-staging-tls
+      hosts:
+        - staging.xagent.example.com
+
+## Redis configuration (Staging)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: "staging-redis-pass"
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+## PostgreSQL configuration (Staging)
+postgresql:
+  enabled: true
+  architecture: standalone
+  auth:
+    username: xagent
+    password: "staging-postgres-pass"
+    database: xagent_staging
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+## ChromaDB configuration (Staging)
+chromadb:
+  enabled: true
+  replicaCount: 1
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+## Monitoring (Staging - Simplified)
+monitoring:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  
+  grafana:
+    enabled: true
+    adminPassword: "staging-grafana"
+    persistence:
+      enabled: false  # No persistence in staging
+  
+  jaeger:
+    enabled: true
+    allInOne:
+      enabled: true
+
+## Network Policies (Staging - Disabled for easier debugging)
+networkPolicy:
+  enabled: false
+
+## Pod Disruption Budget (Staging)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+## Node selector
+nodeSelector: {}
+
+## Tolerations
+tolerations: []
+
+## Affinity (Staging - Basic anti-affinity)
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: xagent
+          topologyKey: kubernetes.io/hostname
+
+## Config (Staging)
+config:
+  agent:
+    mode: "staging"
+    maxIterations: 50
+  
+  llm:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.7
+  
+  log:
+    level: "DEBUG"  # More verbose logging in staging
+  
+  rateLimiting:
+    enabled: true
+    maxIterationsPerMinute: 100
+    maxToolCallsPerMinute: 200

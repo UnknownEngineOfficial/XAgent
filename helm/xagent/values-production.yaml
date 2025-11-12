@@ -1,0 +1,392 @@
+# Production values for xagent
+# This file contains production-ready configuration with high availability
+# and security best practices
+
+## Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+## X-Agent API configuration (Production)
+api:
+  replicaCount: 5  # Higher replica count for HA
+  
+  image:
+    repository: xagent/api
+    pullPolicy: IfNotPresent
+    tag: ""
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8000"
+      prometheus.io/path: "/metrics"
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 5
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 70
+  
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 30
+
+## X-Agent WebSocket Gateway configuration (Production)
+websocket:
+  enabled: true
+  replicaCount: 3  # Multiple replicas for HA
+  
+  image:
+    repository: xagent/websocket
+    pullPolicy: IfNotPresent
+    tag: ""
+  
+  service:
+    type: ClusterIP
+    port: 8001
+    annotations:
+      prometheus.io/scrape: "true"
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+## X-Agent Worker configuration (Production)
+worker:
+  enabled: true
+  replicaCount: 5  # Multiple workers for parallel processing
+  
+  image:
+    repository: xagent/worker
+    pullPolicy: IfNotPresent
+    tag: ""
+  
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 2000m
+      memory: 2Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 5
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+
+## Ingress configuration (Production)
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+  hosts:
+    - host: api.xagent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+    - host: ws.xagent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: websocket
+  tls:
+    - secretName: xagent-api-tls
+      hosts:
+        - api.xagent.example.com
+    - secretName: xagent-ws-tls
+      hosts:
+        - ws.xagent.example.com
+
+## Redis configuration (Production - HA)
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    password: ""  # Set via external secret
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+  sentinel:
+    enabled: true
+    quorum: 2
+
+## PostgreSQL configuration (Production - HA)
+postgresql:
+  enabled: true
+  architecture: replication
+  auth:
+    username: xagent
+    password: ""  # Set via external secret
+    database: xagent
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+
+## ChromaDB configuration (Production)
+chromadb:
+  enabled: true
+  replicaCount: 1  # ChromaDB doesn't support clustering yet
+  
+  image:
+    repository: chromadb/chroma
+    pullPolicy: IfNotPresent
+    tag: "0.4.15"
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: "fast-ssd"
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+## Service Account
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: "xagent@project.iam.gserviceaccount.com"  # GCP example
+  name: ""
+
+## Pod Security Context (Production)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+## Container Security Context (Production)
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+
+## ConfigMap for application configuration
+config:
+  agent:
+    mode: "production"
+    maxIterations: 100
+    thinkingTimeout: 60
+  
+  llm:
+    provider: "openai"
+    model: "gpt-4-turbo"
+    temperature: 0.7
+    maxTokens: 4000
+  
+  log:
+    level: "INFO"
+    format: "json"
+  
+  monitoring:
+    enabled: true
+    prometheusPort: 9090
+  
+  rateLimiting:
+    enabled: true
+    maxIterationsPerMinute: 60
+    maxIterationsPerHour: 2000
+    maxToolCallsPerMinute: 200
+    maxMemoryOpsPerMinute: 500
+
+## Secrets (use external secret manager in production)
+secrets:
+  openaiApiKey: ""  # Managed by external-secrets-operator
+  jwtSecret: ""     # Managed by external-secrets-operator
+  opaPolicyToken: ""  # Managed by external-secrets-operator
+
+## Monitoring stack (Production)
+monitoring:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 15s
+      scrapeTimeout: 10s
+  
+  grafana:
+    enabled: true
+    adminPassword: ""  # Set via external secret
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: "standard"
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus:9090
+        isDefault: true
+  
+  jaeger:
+    enabled: true
+    allInOne:
+      enabled: false
+    collector:
+      enabled: true
+    query:
+      enabled: true
+    storage:
+      type: elasticsearch
+
+## Network Policies (Production - Enabled)
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+
+## Pod Disruption Budget (Production)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2  # Ensure at least 2 pods always available
+
+## Node selector (Production - use dedicated nodes)
+nodeSelector:
+  workload: xagent
+  node.kubernetes.io/instance-type: "n2-standard-4"
+
+## Tolerations (allow scheduling on tainted nodes)
+tolerations:
+  - key: "workload"
+    operator: "Equal"
+    value: "xagent"
+    effect: "NoSchedule"
+
+## Affinity (Production - spread pods across zones)
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: xagent
+        topologyKey: topology.kubernetes.io/zone
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: xagent
+          topologyKey: kubernetes.io/hostname
