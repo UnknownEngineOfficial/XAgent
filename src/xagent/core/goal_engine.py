@@ -24,6 +24,15 @@ class GoalStatus(str, Enum):
     PAUSED = "paused"
 
 
+class Priority(int, Enum):
+    """Goal priority levels."""
+
+    LOW = 0
+    MEDIUM = 1
+    HIGH = 2
+    CRITICAL = 3
+
+
 @dataclass
 class Goal:
     """Represents a goal or task."""
@@ -32,7 +41,7 @@ class Goal:
     description: str = ""
     mode: GoalMode = GoalMode.GOAL_ORIENTED
     status: GoalStatus = GoalStatus.PENDING
-    priority: int = 0
+    priority: int | Priority = 0
     parent_id: str | None = None
     sub_goals: list[str] = field(default_factory=list)
     completion_criteria: list[str] = field(default_factory=list)
@@ -40,15 +49,21 @@ class Goal:
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self) -> None:
+        """Convert Priority enum to int if needed."""
+        if isinstance(self.priority, Priority):
+            self.priority = self.priority.value
 
     def to_dict(self) -> dict[str, Any]:
         """Convert goal to dictionary."""
+        priority_value = self.priority.value if isinstance(self.priority, Priority) else self.priority
         return {
             "id": self.id,
             "description": self.description,
             "mode": self.mode.value,
             "status": self.status.value,
-            "priority": self.priority,
+            "priority": priority_value,
             "parent_id": self.parent_id,
             "sub_goals": self.sub_goals,
             "completion_criteria": self.completion_criteria,
@@ -112,6 +127,34 @@ class GoalEngine:
             self.goals[parent_id].sub_goals.append(goal.id)
 
         return goal
+
+    def add_goal(self, goal: Goal) -> Goal:
+        """
+        Add an existing goal to the engine.
+        
+        Args:
+            goal: Goal object to add
+            
+        Returns:
+            The added goal
+        """
+        self.goals[goal.id] = goal
+        
+        # Add to parent's sub-goals if parent exists
+        if goal.parent_id and goal.parent_id in self.goals:
+            if goal.id not in self.goals[goal.parent_id].sub_goals:
+                self.goals[goal.parent_id].sub_goals.append(goal.id)
+        
+        return goal
+    
+    def get_all_goals(self) -> list[Goal]:
+        """
+        Get all goals.
+        
+        Returns:
+            List of all goals
+        """
+        return list(self.goals.values())
 
     def get_goal(self, goal_id: str) -> Goal | None:
         """Get goal by ID."""

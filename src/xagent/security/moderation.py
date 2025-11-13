@@ -281,3 +281,7 @@ def set_moderation_mode(
     """
     moderator = get_moderator()
     return moderator.set_mode(mode, user_acknowledgment)
+
+
+# Alias for backwards compatibility with demos
+ModerationSystem = ContentModerator
