@@ -4,6 +4,7 @@ This module provides an enhanced planner using LangGraph for complex planning wo
 with state management and conditional routing.
 """
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, TypedDict, cast
@@ -15,6 +16,59 @@ from langgraph.graph import END, StateGraph
 from xagent.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class ComplexityLevel(str, Enum):
+    """Goal complexity levels."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+@dataclass
+class AnalysisResult:
+    """Result of goal analysis."""
+
+    complexity: ComplexityLevel
+    required_capabilities: list[str]
+    estimated_steps: int
+    confidence: float = 1.0
+    reasoning: str = ""
+    estimated_subtasks: int = 0
+    
+    def __post_init__(self) -> None:
+        """Set derived fields if not provided."""
+        if not self.estimated_subtasks:
+            self.estimated_subtasks = self.estimated_steps
+        if not self.reasoning:
+            self.reasoning = f"{self.complexity.value.capitalize()} complexity based on goal analysis"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "complexity": self.complexity.value,
+            "required_capabilities": self.required_capabilities,
+            "estimated_steps": self.estimated_steps,
+            "confidence": self.confidence,
+            "reasoning": self.reasoning,
+            "estimated_subtasks": self.estimated_subtasks,
+        }
+
+
+@dataclass
+class DecompositionResult:
+    """Result of goal decomposition."""
+
+    sub_goals: list[dict[str, Any]]
+    dependencies: list[dict[str, Any]]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "sub_goals": self.sub_goals,
+            "dependencies": self.dependencies,
+        }
 
 
 class PlanningPhase(str, Enum):
@@ -117,6 +171,49 @@ class LangGraphPlanner:
         workflow.add_edge("execute", END)
 
         return workflow.compile()
+
+    async def analyze_goal_complexity(self, goal_description: str) -> AnalysisResult:
+        """
+        Analyze goal complexity - simple wrapper for demos.
+        
+        Args:
+            goal_description: Description of the goal to analyze
+            
+        Returns:
+            AnalysisResult with complexity level and details
+        """
+        # Simple heuristic for complexity
+        description_lower = goal_description.lower()
+        word_count = len(goal_description.split())
+        
+        # Determine complexity
+        if word_count > 50 or any(word in description_lower for word in ["architecture", "system", "enterprise", "distributed"]):
+            complexity = ComplexityLevel.HIGH
+            estimated_steps = 8
+        elif word_count > 20 or any(word in description_lower for word in ["api", "database", "authentication", "service"]):
+            complexity = ComplexityLevel.MEDIUM
+            estimated_steps = 4
+        else:
+            complexity = ComplexityLevel.LOW
+            estimated_steps = 2
+        
+        # Identify required capabilities
+        capabilities = []
+        if any(word in description_lower for word in ["code", "program", "script", "function", "implement"]):
+            capabilities.append("code_execution")
+        if any(word in description_lower for word in ["file", "write", "read", "save"]):
+            capabilities.append("file_operations")
+        if any(word in description_lower for word in ["web", "search", "fetch", "api"]):
+            capabilities.append("web_access")
+        if any(word in description_lower for word in ["database", "sql", "store", "persist"]):
+            capabilities.append("database")
+        
+        return AnalysisResult(
+            complexity=complexity,
+            required_capabilities=capabilities,
+            estimated_steps=estimated_steps,
+            confidence=0.85,
+        )
 
     async def create_plan(self, context: dict[str, Any]) -> dict[str, Any] | None:
         """

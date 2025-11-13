@@ -210,7 +210,7 @@ async def demo_planner():
         ]
         
         for goal_desc, expected_complexity in test_goals:
-            result = await planner._analyze_goal(goal_desc)
+            result = await planner.analyze_goal_complexity(goal_desc)
             complexity_color = {
                 ComplexityLevel.LOW: "green",
                 ComplexityLevel.MEDIUM: "yellow",
@@ -320,10 +320,12 @@ async def demo_security():
             ("Build a web scraper", True),
         ]
         
-        for content, should_pass in test_content:
-            result = await moderator.moderate_content(content)
-            status = "[green]✓ Approved[/green]" if result.approved else "[red]✗ Blocked[/red]"
-            console.print(f"  • {content[:40]}... : {status}")
+        for content_text, should_pass in test_content:
+            # Wrap string in dict format that moderate_content expects
+            content = {"text": content_text, "type": "user_input"}
+            result = moderator.moderate_content(content)
+            status = "[green]✓ Approved[/green]" if result["allowed"] else "[red]✗ Blocked[/red]"
+            console.print(f"  • {content_text[:40]}... : {status}")
         
         # Security features
         console.print("\n[bold]Security Features:[/bold]")

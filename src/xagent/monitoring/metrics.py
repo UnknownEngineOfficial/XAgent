@@ -527,3 +527,111 @@ def get_metrics_collector() -> MetricsCollector:
     if _metrics_collector is None:
         _metrics_collector = MetricsCollector()
     return _metrics_collector
+
+
+# ============================================================================
+# Convenience Functions for Demos and Quick Usage
+# ============================================================================
+
+_agent_start_time: float | None = None
+_task_stats = {"success": 0, "failure": 0}
+
+
+def track_agent_uptime() -> dict[str, float]:
+    """Track and return agent uptime.
+    
+    Returns:
+        dict: Contains 'uptime_seconds' and 'start_time' keys
+    """
+    global _agent_start_time
+    
+    if _agent_start_time is None:
+        _agent_start_time = time.time()
+    
+    uptime = time.time() - _agent_start_time
+    agent_uptime_seconds.set(uptime)
+    
+    return {
+        "uptime_seconds": uptime,
+        "start_time": _agent_start_time,
+    }
+
+
+def track_decision_latency(duration: float) -> dict[str, float]:
+    """Track decision-making latency.
+    
+    Args:
+        duration: Time taken to make decision in seconds
+        
+    Returns:
+        dict: Contains 'latency_seconds' and current 'average' keys
+    """
+    agent_decision_latency.observe(duration)
+    
+    # Calculate simple average (note: this is approximate)
+    # For more precise metrics, use Prometheus queries
+    return {
+        "latency_seconds": duration,
+        "average": duration,  # Simplified - real average comes from Prometheus
+    }
+
+
+def track_task_completion(success: bool = True) -> dict[str, any]:
+    """Track task completion and calculate success rate.
+    
+    Args:
+        success: Whether task completed successfully
+        
+    Returns:
+        dict: Contains 'total', 'success', 'failure', and 'success_rate_percent' keys
+    """
+    global _task_stats
+    
+    status = "success" if success else "failure"
+    agent_tasks_completed_total.labels(status=status).inc()
+    
+    # Update local stats
+    _task_stats[status] += 1
+    
+    total = _task_stats["success"] + _task_stats["failure"]
+    success_rate = (_task_stats["success"] / total * 100) if total > 0 else 0
+    
+    agent_task_success_rate.set(success_rate)
+    
+    return {
+        "total": total,
+        "success": _task_stats["success"],
+        "failure": _task_stats["failure"],
+        "success_rate_percent": success_rate,
+    }
+
+
+def get_metrics_summary() -> dict[str, any]:
+    """Get comprehensive metrics summary.
+    
+    Returns:
+        dict: Contains uptime, latency, and success rate information
+    """
+    uptime_info = track_agent_uptime()
+    
+    return {
+        "uptime": uptime_info,
+        "tasks": {
+            "total": _task_stats["success"] + _task_stats["failure"],
+            "success": _task_stats["success"],
+            "failure": _task_stats["failure"],
+            "success_rate_percent": (
+                (_task_stats["success"] / (_task_stats["success"] + _task_stats["failure"]) * 100)
+                if (_task_stats["success"] + _task_stats["failure"]) > 0
+                else 0
+            ),
+        },
+        "timestamp": time.time(),
+    }
+
+
+def reset_metrics() -> None:
+    """Reset runtime metrics for testing purposes."""
+    global _agent_start_time, _task_stats
+    _agent_start_time = None
+    _task_stats = {"success": 0, "failure": 0}
