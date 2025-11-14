@@ -1,0 +1,70 @@
+{
+  "created_at": "2025-11-14T00:00:31.715653",
+  "version": "0.1.0",
+  "benchmarks": {
+    "cognitive_loop": {
+      "iteration_latency_ms": {
+        "avg": 25.149499739999328,
+        "p50": 25.143602000014198,
+        "p95": 25.20387499998833,
+        "p99": 25.23892099998193,
+        "min": 25.086574999988898,
+        "max": 25.23892099998193
+      },
+      "throughput_per_sec": 39.76222232403048
+    },
+    "memory": {
+      "write_rate_per_sec": 928.0243109108932,
+      "read_latency_ms": {
+        "avg": 4.130310419999432,
+        "p50": 4.132705000017722,
+        "p95": 4.154936000020371
+      }
+    },
+    "planning": {
+      "simple_planning_ms": {
+        "avg": 95.24230531999932,
+        "p95": 95.27566799999931
+      },
+      "complex_planning_ms": {
+        "avg": 450.57801235000454,
+        "p95": 450.62505700002475
+      }
+    },
+    "goals": {
+      "creation_rate_per_sec": 92126.10268840849,
+      "query_latency_ms": {
+        "avg": 1.076793850006652,
+        "p95": 1.0858149999535271
+      }
+    },
+    "tools": {
+      "action_execution_ms": {
+        "avg": 5.131907219999334,
+        "p50": 5.13374100000874,
+        "p95": 5.143820000000687
+      }
+    },
+    "e2e": {
+      "simple_workflow_ms": {
+        "avg": 135.62859299999843,
+        "p95": 135.71098999995002
+      }
+    }
+  },
+  "thresholds": {
+    "cognitive_loop_latency_ms": 27.724262499987166,
+    "memory_write_rate_per_sec": 835.2218798198039,
+    "memory_read_latency_ms": 4.570429600022408,
+    "simple_planning_ms": 104.80323479999926,
+    "complex_planning_ms": 495.6875627000273,
+    "goal_creation_rate_per_sec": 82913.49241956764,
+    "action_execution_ms": 5.658202000000757,
+    "workflow_ms": 149.28208899994502
+  },
+  "regression_tolerance": {
+    "description": "Allowed performance regression before alert",
+    "percentage": 10,
+    "note": "Thresholds set at 10% above baseline measurements"
+  }
+}
