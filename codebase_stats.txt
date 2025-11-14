@@ -1,0 +1,27 @@
+XAgent Codebase Statistics
+==========================
+Generated: 2025-11-13
+
+DIRECTORY STRUCTURE
+-------------------
+
+Source Code Files:
+50
+
+Test Files:
+55
+
+Documentation Files:
+81
+71
+
+Example Scripts:
+40
+
+LINES OF CODE
+-------------
+Source Code:
+ 13365 total
+
+Test Code:
+ 17722 total
